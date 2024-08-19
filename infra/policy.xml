@@ -1,6 +1,12 @@
 <policies>
     <inbound>
         <base />
+         <azure-openai-token-limit tokens-per-minute="1000" counter-key="@(context.Subscription.Id)" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
+        <azure-openai-emit-token-metric namespace="AzureOpenAI">
+            <dimension name="User ID" />
+            <dimension name="Client IP" value="@(context.Request.IpAddress)" />
+            <dimension name="API ID" />
+        </azure-openai-emit-token-metric>
         <!-- Getting the main variable where we keep the list of backends -->
         <cache-lookup-value key="listBackends" variable-name="listBackends" />
         <!-- If we can't find the variable, initialize it -->

@@ -2,6 +2,9 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+      "apimDiagnosticsName": {
+        "value": "apimDiagnostics"
+      },
       "openAIBackendPoolName": { "value": "openai-backend-pool" },
       "openAIConfig": { "value": [ {"name": "openai1", "location": "swedencentral"}, {"name": "openai2", "location": "francecentral"}  ] },
       "openAIDeploymentName": { "value":"gpt-35-turbo" },
@@ -24,7 +27,7 @@
       "apimSkuCount": { "value": 1},
       "apimPublisherName": { "value": "Microsoft"},
       "apimPublisherEmail" :{ "value": "noreply@microsoft.com"},
-      "appInsightName": { "value": "openai-app-insight"},
-      "appInsightLocation": { "value": "westeurope"},   
+      "appInsightName": { "value": "openai-apim-insight"},
+      "logAnalyticsName": { "value": "openai-apim-loganalytics"}
     }
   }

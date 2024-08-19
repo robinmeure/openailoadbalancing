@@ -84,8 +84,14 @@ param openAILoadBalancingConfigName string
 @description('The value of the named value for the load balancing configuration')
 var openAILoadBalancingConfigValue = '[ {"name": "openai1", "priority": 1, "weight": 100}, {"name": "openai2", "priority": 2, "weight": 300}  ]'
 
+@description('The name of the Log Analytics resource')
+param logAnalyticsName string
+
 @description('The name of the Application Insights resource')
 param appInsightName string
+
+param apimDiagnosticsName string = 'apimDiagnostics'
+
 
 var resourceSuffix = uniqueString(subscription().id, resourceGroup().id)
 
@@ -293,6 +299,122 @@ resource namedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-prev
     displayName: openAILoadBalancingConfigName
     secret: false
     value: openAILoadBalancingConfigValue
+  }
+}
+
+resource apiFinanceSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-01-preview' = {
+  parent: apimService
+  name: 'finance-dept-subscription'
+  properties: {
+    scope: '/apis'
+    displayName: 'Finance'
+    state: 'active'
+    allowTracing: true
+  }
+}
+
+resource apiMarketingSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-03-01-preview' = {
+  parent: apimService
+  name: 'marketing-dept-subscription'
+  properties: {
+    scope: '/apis'
+    displayName: 'Marketing'
+    state: 'active'
+    allowTracing: true
+  }
+}
+
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
+  name: logAnalyticsName
+  location: apimResourceLocation
+  properties: any({
+    retentionInDays: 30
+    features: {
+      searchVersion: 1
+    }
+    sku: {
+      name: 'PerGB2018'
+    }
+    publicNetworkAccessForIngestion: 'Disabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  })
+}
+
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: appInsightName
+  location: apimResourceLocation
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
+    publicNetworkAccessForIngestion: 'Disabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
+resource apimLogger 'Microsoft.ApiManagement/service/loggers@2021-12-01-preview' = {
+  name: 'appinsights-logger'
+  parent: apimService
+  properties: {
+    credentials: {
+      instrumentationKey: applicationInsights.properties.InstrumentationKey
+    }
+    description: 'Logger to Azure Application Insights'
+    isBuffered: false
+    loggerType: 'applicationInsights'
+    resourceId: applicationInsights.id
+  }
+}
+
+
+var headers = [
+  'x-ratelimit-remaining-requests'
+  'x-ratelimit-remaining-tokens'
+  'consumed-tokens'
+  'remaining-tokens'
+]
+
+resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-01-preview'  = {
+  name: 'applicationinsights'  
+  parent: api
+  properties: {
+    alwaysLog: 'allErrors'
+    backend: {
+      request: {
+        body: {
+          bytes: 0
+        }
+      }
+      response: {
+        body: {
+          bytes: 0
+        }
+        headers: headers
+      }
+    }
+    frontend: {
+      request: {
+        body: {
+          bytes: 0
+        }
+      }
+      response: {
+        body: {
+          bytes: 0
+        }
+        headers: headers
+      }
+    }
+    httpCorrelationProtocol: 'Legacy'
+    logClientIp: true
+    loggerId: apimLogger.id
+    metrics: true
+    operationNameFormat: 'Name'
+    sampling: {
+      percentage: 100
+      samplingType: 'fixed'
+    }
+    verbosity: 'information'
   }
 }
 
