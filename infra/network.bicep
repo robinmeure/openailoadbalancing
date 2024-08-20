@@ -110,5 +110,18 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
   }
 }
 
+module dns 'br/public:avm/res/network/private-dns-zone:0.5.0' = {
+  name: 'dns-deployment'
+  params: {
+    name: 'privatelink.openai.azure.com'
+    virtualNetworkLinks: [
+      {
+        name: 'vnet-link'
+        virtualNetworkResourceId: virtualNetwork.outputs.resourceId
+      }
+    ]
+  }
+}
+
 output apimSubnetId string = virtualNetwork.outputs.subnetResourceIds[0]
 output openaiSubnetId string = virtualNetwork.outputs.subnetResourceIds[1]

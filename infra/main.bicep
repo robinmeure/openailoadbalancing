@@ -127,7 +127,7 @@ resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2021-10-01' = [
       apiProperties: {
         statisticsEnabled: false
       }
-      customSubDomainName: toLower('${config.name}-${resourceSuffix}')
+      customSubDomainName: toLower('${config.name}-${config.location}-${resourceSuffix}')
     }
   }
 ]
@@ -329,7 +329,7 @@ resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-prev
 //   }
 // }]
 
-resource backendPoolOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = if (length(openAIConfig) > 1) {
+resource backendPoolOpenAI 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' = if (length(openAIConfig) > 1) {
   name: openAIBackendPoolName
   parent: apimService
   properties: {

@@ -3,7 +3,11 @@ param openaiSubnetResourceId string
 param location string
 
 resource openai 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' existing = {
-  name:openaiName
+  name: openaiName
+}
+
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2021-05-01' existing = {
+  name: 'privatelink.openai.azure.com'
 }
 
 module openaiPrivateEndPoint 'br/public:avm/res/network/private-endpoint:0.7.1' = {
@@ -12,7 +16,7 @@ module openaiPrivateEndPoint 'br/public:avm/res/network/private-endpoint:0.7.1' 
     name: '${openaiName}-pe'
     location: location
     subnetResourceId: openaiSubnetResourceId
-    privateLinkServiceConnections:[
+    privateLinkServiceConnections: [
       {
         name: '${openaiName}-pe-connection'
         properties: {
@@ -21,6 +25,12 @@ module openaiPrivateEndPoint 'br/public:avm/res/network/private-endpoint:0.7.1' 
         }
       }
     ]
+    privateDnsZoneGroup: {
+      privateDnsZoneGroupConfigs: [
+        {
+          privateDnsZoneResourceId: privateDnsZone.id
+        }
+      ]
+    }
   }
 }
-    
