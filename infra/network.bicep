@@ -2,7 +2,7 @@ param vnetName string
 param vnetAddressPrefix string
 param apimSubnetPrefix string
 param openaiSubnetPrefix string
-param apimSku string
+param apimSku string 
 
 var webServerFarmDelegation = [
   {
