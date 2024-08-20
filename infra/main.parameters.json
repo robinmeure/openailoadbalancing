@@ -1,33 +1,102 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-      "apimDiagnosticsName": {
-        "value": "apimDiagnostics"
-      },
-      "openAIBackendPoolName": { "value": "openai-backend-pool" },
-      "openAIConfig": { "value": [ {"name": "openai1", "location": "swedencentral"}, {"name": "openai2", "location": "francecentral"}  ] },
-      "openAIDeploymentName": { "value":"gpt-35-turbo" },
-      "openAISku": { "value": "S0" },
-      "openAIModelCapacity": { "value": 20 },
-      "openAIModelName": { "value": "gpt-35-turbo" },
-      "openAIModelVersion": { "value": "0613" },
-      "openAIAPISpecURL": { "value": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/cognitiveservices/data-plane/AzureOpenAI/inference/stable/2024-02-01/inference.json" },
-      "openAILoadBalancingConfigName": { "value": "openai-lb-config" },
-      "openAIBackendPoolDescription":{"value": "Load balancer for multiple OpenAI endpoints"},
-      "openAISubscriptionName" :{ "value": "openai-subscription"},
-      "openAISubscriptionDescription":{ "value": "Subscription for OpenAI resources"},
-      "openAIAPIName" :{ "value": "openai-api"},
-      "openAIAPIPath" :{ "value": "openai"},
-      "openAIAPIDisplayName" :{ "value": "OpenAI API"},
-      "openAIAPIDescription" :{ "value": "Azure OpenAI API inferencing API"},
-      "apimResourceName": { "value":"APIPM-OpenAI" },
-      "apimResourceLocation": { "value": "westeurope"},
-      "apimSku": { "value": "Standardv2"},
-      "apimSkuCount": { "value": 1},
-      "apimPublisherName": { "value": "Microsoft"},
-      "apimPublisherEmail" :{ "value": "noreply@microsoft.com"},
-      "appInsightName": { "value": "openai-apim-insight"},
-      "logAnalyticsName": { "value": "openai-apim-loganalytics"}
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apimDiagnosticsName": {
+      "value": "apimDiagnostics"
+    },
+    "openAIBackendPoolName": {
+      "value": "openai-backend-pool"
+    },
+    "openAIConfig": {
+      "value": [
+        {
+          "name": "openai1",
+          "location": "swedencentral"
+        },
+        {
+          "name": "openai2",
+          "location": "eastus"
+        }
+      ]
+    },
+    "openAIDeploymentName": {
+      "value": "gpt"
+    },
+    "openAISku": {
+      "value": "S0"
+    },
+    "openAIModelCapacity": {
+      "value": 20
+    },
+    "openAIModelName": {
+      "value": "gpt-4o-mini"
+    },
+    "openAIModelVersion": {
+      "value": "2024-07-18"
+    },
+    "openAIAPISpecURL": {
+      "value": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/cognitiveservices/data-plane/AzureOpenAI/inference/stable/2024-06-01/inference.json"
+    },
+    "openAILoadBalancingConfigName": {
+      "value": "openai-lb-config"
+    },
+    "openAIBackendPoolDescription": {
+      "value": "Load balancer for multiple OpenAI endpoints"
+    },
+    "openAISubscriptionName": {
+      "value": "openai-subscription"
+    },
+    "openAISubscriptionDescription": {
+      "value": "Subscription for OpenAI resources"
+    },
+    "openAIAPIName": {
+      "value": "openai-api"
+    },
+    "openAIAPIPath": {
+      "value": "openai"
+    },
+    "openAIAPIDisplayName": {
+      "value": "OpenAI API"
+    },
+    "openAIAPIDescription": {
+      "value": "Azure OpenAI API inferencing API"
+    },
+    "apimResourceName": {
+      "value": "apim-ai-gateway"
+    },
+    "apimResourceLocation": {
+      "value": "westeurope"
+    },
+    "apimSku": {
+      "value": "Standardv2"
+    },
+    "apimSkuCount": {
+      "value": 1
+    },
+    "apimPublisherName": {
+      "value": "Microsoft"
+    },
+    "apimPublisherEmail": {
+      "value": "noreply@microsoft.com"
+    },
+    "appInsightName": {
+      "value": "openai-apim-insight"
+    },
+    "logAnalyticsName": {
+      "value": "openai-apim-loganalytics"
+    },
+    "vnetName": {
+      "value": "vnet-ai-gateway"
+    },
+    "vnetAddressPrefix": {
+      "value": "10.0.0.0/16"
+    },
+    "apimSubnetPrefix": {
+      "value": "10.0.0.0/24"
+    },
+    "openaiSubnetPrefix": {
+      "value": "10.0.1.0/24"
     }
   }
+}
