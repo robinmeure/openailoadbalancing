@@ -46,9 +46,9 @@ param apimSku string = 'Standardv2'
 param apimSkuCount int = 1
 
 @description('The email address of the owner of the service')
-param apimPublisherEmail string 
+param apimPublisherEmail string
 @description('The name of the owner of the service')
-param apimPublisherName string 
+param apimPublisherName string
 
 @description('The name of the APIM API for OpenAI API')
 param openAIAPIName string
@@ -57,16 +57,16 @@ param openAIAPIName string
 param openAIAPIPath string
 
 @description('The display name of the APIM API for OpenAI API')
-param openAIAPIDisplayName string 
+param openAIAPIDisplayName string
 
 @description('The description of the APIM API for OpenAI API')
-param openAIAPIDescription string 
+param openAIAPIDescription string
 
 @description('Full URL for the OpenAI API spec')
 param openAIAPISpecURL string
 
 @description('The name of the APIM Subscription for OpenAI API')
-param openAISubscriptionName string 
+param openAISubscriptionName string
 
 @description('The description of the APIM Subscription for OpenAI API')
 param openAISubscriptionDescription string
@@ -92,25 +92,60 @@ param appInsightName string
 
 param apimDiagnosticsName string = 'apimDiagnostics'
 
+param apimSubnetPrefix string = '10.0.0.0/24'
+param openaiSubnetPrefix string = '10.0.1.0/24'
+param vnetAddressPrefix string = '10.0.0.0/16'
 
 var resourceSuffix = uniqueString(subscription().id, resourceGroup().id)
+var apimName = '${apimResourceName}-${resourceSuffix}'
+var vnetName = 'vnet-ai-gateway-${resourceSuffix}'
 
-resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2021-10-01' = [for config in openAIConfig: if(length(openAIConfig) > 0) {
-  name: '${config.name}-${resourceSuffix}'
-  location: config.location
-  sku: {
-    name: openAISku
+module network 'network.bicep' = {
+  name: 'network-deployment'
+  params: {
+    apimSku: apimSku
+    location: apimResourceLocation
+    apimSubnetPrefix: apimSubnetPrefix
+    openaiSubnetPrefix: openaiSubnetPrefix
+    vnetAddressPrefix: vnetAddressPrefix
+    vnetName: vnetName
   }
-  kind: 'OpenAI'  
-  properties: {
-    apiProperties: {
-      statisticsEnabled: false
+}
+
+resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2021-10-01' = [
+  for config in openAIConfig: if (length(openAIConfig) > 0) {
+    name: '${config.name}-${config.location}-${resourceSuffix}'
+    location: config.location
+    sku: {
+      name: openAISku
     }
-    customSubDomainName: toLower('${config.name}-${resourceSuffix}')
+    kind: 'OpenAI'
+    properties: {
+      disableLocalAuth: true
+      publicNetworkAccess: 'Disabled'
+      networkAcls: {defaultAction: 'Deny'}
+      apiProperties: {
+        statisticsEnabled: false
+      }
+      customSubDomainName: toLower('${config.name}-${resourceSuffix}')
+    }
   }
-}]
+]
 
-resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01'  =  [for (config, i) in openAIConfig: if(length(openAIConfig) > 0) {
+module privateEndpoints 'private-endpoint.bicep' = [
+  for config in openAIConfig: if (length(openAIConfig) > 0) {
+    name: '${config.name}-private-endpoint-deployment'
+    params: {
+      location: apimResourceLocation
+      openaiName: '${config.name}-${config.location}-${resourceSuffix}'
+      openaiSubnetResourceId: network.outputs.openaiSubnetId
+    }
+  }
+]
+
+
+resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
+  for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
     name: openAIDeploymentName
     parent: cognitiveServices[i]
     properties: {
@@ -121,10 +156,33 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01
       }
     }
     sku: {
-        name: 'Standard'
-        capacity: openAIModelCapacity
+      name: 'Standard'
+      capacity: openAIModelCapacity
     }
-}]
+  }
+]
+
+//setting explicit public IP for APIM will force stV2 instance of APIM
+resource apimPublicIp 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
+  name: '${apimName}-pip'
+  location: apimResourceLocation
+  sku: {
+    name: 'Standard'
+    tier: 'Regional'
+  }
+  zones: ['1','2','3']
+  properties: {
+    publicIPAllocationMethod: 'Static'
+    publicIPAddressVersion: 'IPv4'
+    dnsSettings: {
+      domainNameLabel: apimName
+      fqdn: '${apimName}.${apimResourceLocation}.cloudapp.azure.com'
+    }
+    
+
+  }
+
+}
 
 resource apimService 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
   name: '${apimResourceName}-${resourceSuffix}'
@@ -134,46 +192,69 @@ resource apimService 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
     capacity: (apimSku == 'Consumption') ? 0 : ((apimSku == 'Developer') ? 1 : apimSkuCount)
   }
   properties: {
+    virtualNetworkType: 'External'
+    publicIpAddressId: apimPublicIp.id 
+    virtualNetworkConfiguration: {
+      subnetResourceId: network.outputs.apimSubnetId
+    }
     publisherEmail: apimPublisherEmail
     publisherName: apimPublisherName
+    customProperties: apimSku == 'Consumption' ? {} : {
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TLS_RSA_WITH_AES_128_GCM_SHA256': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TLS_RSA_WITH_AES_256_CBC_SHA256': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TLS_RSA_WITH_AES_128_CBC_SHA256': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TLS_RSA_WITH_AES_256_CBC_SHA': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TLS_RSA_WITH_AES_128_CBC_SHA': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TripleDes168': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Ssl30': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls10': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls11': 'false'
+      'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Ssl30': 'false'
+    }
   }
   identity: {
     type: 'SystemAssigned'
-  } 
+  }
 }
 
 var roleDefinitionID = resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (config, i) in openAIConfig: if(length(openAIConfig) > 0) {
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
+  for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
     scope: cognitiveServices[i]
     name: guid(subscription().id, resourceGroup().id, config.name, roleDefinitionID)
     properties: {
-        roleDefinitionId: roleDefinitionID
-        principalId: apimService.identity.principalId
-        principalType: 'ServicePrincipal'
-    }
-}]
-
-resource api 'Microsoft.ApiManagement/service/apis@2023-05-01-preview' = {
-    name: openAIAPIName
-    parent: apimService
-    properties: {
-      apiType: 'http'
-      description: openAIAPIDescription
-      displayName: openAIAPIDisplayName
-      format: 'openapi-link'
-      path: openAIAPIPath
-      protocols: [
-        'https'
-      ]
-      subscriptionKeyParameterNames: {
-        header: 'api-key'
-        query: 'api-key'
-      }
-      subscriptionRequired: true
-      type: 'http'
-      value: openAIAPISpecURL
+      roleDefinitionId: roleDefinitionID
+      principalId: apimService.identity.principalId
+      principalType: 'ServicePrincipal'
     }
   }
+]
+
+resource api 'Microsoft.ApiManagement/service/apis@2023-05-01-preview' = {
+  name: openAIAPIName
+  parent: apimService
+  properties: {
+    apiType: 'http'
+    description: openAIAPIDescription
+    displayName: openAIAPIDisplayName
+    format: 'openapi-link'
+    path: openAIAPIPath
+    protocols: [
+      'https'
+    ]
+    subscriptionKeyParameterNames: {
+      header: 'api-key'
+      query: 'api-key'
+    }
+    subscriptionRequired: true
+    type: 'http'
+    value: openAIAPISpecURL
+  }
+}
 
 resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-12-01-preview' = {
   name: 'policy'
@@ -184,36 +265,38 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-12-01-pre
   }
 }
 
-resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = [for (config, i) in openAIConfig: if(length(openAIConfig) > 0) {
-  name: config.name
-  parent: apimService
-  properties: {
-    description: 'backend description'
-    url: '${cognitiveServices[i].properties.endpoint}/openai'
-    protocol: 'http'
-    circuitBreaker: {
-      rules: [
-        {
-          failureCondition: {
-            count: 3
-            errorReasons: [
-              'Server errors'
-            ]
-            interval: 'PT5M'
-            statusCodeRanges: [
-              {
-                min: 429
-                max: 429
-              }
-            ]
+resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = [
+  for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
+    name: config.name
+    parent: apimService
+    properties: {
+      description: 'backend description'
+      url: '${cognitiveServices[i].properties.endpoint}/openai'
+      protocol: 'http'
+      circuitBreaker: {
+        rules: [
+          {
+            failureCondition: {
+              count: 3
+              errorReasons: [
+                'Server errors'
+              ]
+              interval: 'PT5M'
+              statusCodeRanges: [
+                {
+                  min: 429
+                  max: 429
+                }
+              ]
+            }
+            name: 'openAIBreakerRule'
+            tripDuration: 'PT1M'
           }
-          name: 'openAIBreakerRule'
-          tripDuration: 'PT1M'
-        }
-      ]
-    }    
+        ]
+      }
+    }
   }
-}]
+]
 
 // resource backendMock 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = [for (mock, i) in mockWebApps: if(length(openAIConfig) == 0 && length(mockWebApps) > 0) {
 //   name: mock.name
@@ -246,16 +329,17 @@ resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-prev
 //   }
 // }]
 
-resource backendPoolOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = if(length(openAIConfig) > 1) {
+resource backendPoolOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = if (length(openAIConfig) > 1) {
   name: openAIBackendPoolName
   parent: apimService
   properties: {
     description: openAIBackendPoolDescription
     type: 'Pool'
-//    protocol: 'http'  // the protocol is not needed in the Pool type
-//    url: '${cognitiveServices[0].properties.endpoint}/openai'   // the url is not needed in the Pool type
+    //    protocol: 'http'  // the protocol is not needed in the Pool type
+    //    url: '${cognitiveServices[0].properties.endpoint}/openai'   // the url is not needed in the Pool type
     pool: {
-      services: [for (config, i) in openAIConfig: {
+      services: [
+        for (config, i) in openAIConfig: {
           id: '/backends/${backendOpenAI[i].name}'
         }
       ]
@@ -366,7 +450,6 @@ resource apimLogger 'Microsoft.ApiManagement/service/loggers@2021-12-01-preview'
   }
 }
 
-
 var headers = [
   'x-ratelimit-remaining-requests'
   'x-ratelimit-remaining-tokens'
@@ -374,8 +457,8 @@ var headers = [
   'remaining-tokens'
 ]
 
-resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-01-preview'  = {
-  name: 'applicationinsights'  
+resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-01-preview' = {
+  name: 'applicationinsights'
   parent: api
   properties: {
     alwaysLog: 'allErrors'
@@ -418,11 +501,9 @@ resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-
   }
 }
 
-
 output apimServiceId string = apimService.id
 
 output apimResourceGatewayURL string = apimService.properties.gatewayUrl
 
 #disable-next-line outputs-should-not-contain-secrets
 output apimSubscriptionKey string = apimSubscription.listSecrets().primaryKey
-

@@ -3,6 +3,7 @@ param vnetAddressPrefix string
 param apimSubnetPrefix string
 param openaiSubnetPrefix string
 param apimSku string 
+param location string
 
 var webServerFarmDelegation = [
   {
@@ -17,6 +18,7 @@ module nsgApim 'br/public:avm/res/network/network-security-group:0.4.0' = {
   name: 'nsg-apim-deployment'
   params: {
     name: 'nsg-apim'
+    location: location
     securityRules: [
       {
         name: 'AllowClientToGateway'
@@ -65,6 +67,7 @@ module nsgOpenAI 'br/public:avm/res/network/network-security-group:0.4.0' = {
   name: 'nsg-openai-deployment'
   params: {
     name: 'nsg-openai'
+    location: location
     securityRules: [
       {
         name: 'AllowAPIM'
@@ -87,6 +90,7 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
   name: 'virtualNetworkDeployment'
   params: {
     name: vnetName
+    location: location
     addressPrefixes: [
       vnetAddressPrefix
     ]
@@ -105,3 +109,6 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
     ]
   }
 }
+
+output apimSubnetId string = virtualNetwork.outputs.subnetResourceIds[0]
+output openaiSubnetId string = virtualNetwork.outputs.subnetResourceIds[1]

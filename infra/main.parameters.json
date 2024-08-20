@@ -16,12 +16,12 @@
         },
         {
           "name": "openai2",
-          "location": "francecentral"
+          "location": "eastus"
         }
       ]
     },
     "openAIDeploymentName": {
-      "value": "gpt-4o-mini"
+      "value": "gpt"
     },
     "openAISku": {
       "value": "S0"
@@ -69,7 +69,7 @@
       "value": "westeurope"
     },
     "apimSku": {
-      "value": "StandardV2"
+      "value": "Standardv2"
     },
     "apimSkuCount": {
       "value": 1
