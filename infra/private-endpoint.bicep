@@ -6,6 +6,7 @@ resource openai 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' existi
   name: openaiName
 }
 
+#disable-next-line BCP081
 resource privateDnsZone 'Microsoft.Network/privateDnsZones@2021-05-01' existing = {
   name: 'privatelink.openai.azure.com'
 }

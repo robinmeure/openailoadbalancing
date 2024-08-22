@@ -90,7 +90,8 @@ param logAnalyticsName string
 @description('The name of the Application Insights resource')
 param appInsightName string
 
-param apimDiagnosticsName string = 'apimDiagnostics'
+// @description('The name of the ApimDiagnostics Setting')
+// param apimDiagnosticsName string
 
 param apimSubnetPrefix string = '10.0.0.0/24'
 param openaiSubnetPrefix string = '10.0.1.0/24'
@@ -98,7 +99,7 @@ param vnetAddressPrefix string = '10.0.0.0/16'
 
 var resourceSuffix = uniqueString(subscription().id, resourceGroup().id)
 var apimName = '${apimResourceName}-${resourceSuffix}'
-var vnetName = 'vnet-ai-gateway-${resourceSuffix}'
+param vnetName string
 
 module network 'network.bicep' = {
   name: 'network-deployment'
@@ -332,11 +333,12 @@ resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-prev
 resource backendPoolOpenAI 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' = if (length(openAIConfig) > 1) {
   name: openAIBackendPoolName
   parent: apimService
+#disable-next-line BCP035
   properties: {
     description: openAIBackendPoolDescription
     type: 'Pool'
-    //    protocol: 'http'  // the protocol is not needed in the Pool type
-    //    url: '${cognitiveServices[0].properties.endpoint}/openai'   // the url is not needed in the Pool type
+    //     protocol: 'http'  // the protocol is not needed in the Pool type
+    //     url: '${cognitiveServices[0].properties.endpoint}/openai'   // the url is not needed in the Pool type
     pool: {
       services: [
         for (config, i) in openAIConfig: {

@@ -1,19 +1,26 @@
 <policies>
     <inbound>
         <base />
-         <azure-openai-token-limit tokens-per-minute="1000" counter-key="@(context.Subscription.Id)" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
+        <send-request mode="new" response-variable-name="loadBalancerConfig" timeout="10" ignore-error="false">
+            <set-url>@{
+                return $"https://appconfig-openai.azconfig.io/kv/openai-lb-config?api-version=2023-10-01";
+            }</set-url>
+            <set-method>GET</set-method>
+            <authentication-managed-identity resource="https://appconfig-openai.azconfig.io" />
+        </send-request>
+        <!-- <trace source="apim-ai-gateway">@($"{((IResponse)context.Variables["configresponse"]).Body.As<JObject>()["value"] }")</trace>-->
         <azure-openai-emit-token-metric namespace="AzureOpenAI">
             <dimension name="User ID" />
             <dimension name="Client IP" value="@(context.Request.IpAddress)" />
             <dimension name="API ID" />
         </azure-openai-emit-token-metric>
+        <azure-openai-token-limit tokens-per-minute="1000" counter-key="@(context.Request.IpAddress)" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
         <!-- Getting the main variable where we keep the list of backends -->
         <cache-lookup-value key="listBackends" variable-name="listBackends" />
         <!-- If we can't find the variable, initialize it -->
         <choose>
             <when condition="@(context.Variables.ContainsKey("listBackends") == false)">
                 <!-- Variable with the load balancer config stored in a named value -->
-                <set-variable name="loadBalancerConfig" value="{{openai-lb-config}}" />
                 <set-variable name="listBackends" value="@{
                     // -------------------------------------------------
                     // ------- Explanation of backend properties -------
@@ -25,7 +32,8 @@
                     // "isThrottling": Indicates if this endpoint is returning 429 (Too many requests) currently
                     // "retryAfter":   We use it to know when to mark this endpoint as healthy again after we received a 429 response
 
-                    var openAIConfig = JArray.Parse((string)context.Variables["loadBalancerConfig"]);
+                    var openAIConfigResponse = ((IResponse)context.Variables["loadBalancerConfig"]).Body.As<JObject>()["value"];
+                    var openAIConfig = JArray.Parse((string)openAIConfigResponse);
                     JArray backends = new JArray();
                     foreach (JObject config in openAIConfig)
                     {
@@ -166,6 +174,28 @@
     </backend>
     <outbound>
         <base />
+        <set-header name="prompt-tokens" exists-action="override">
+            <value>@{
+            string token = "0";
+            try
+            {
+                token = (string)context.Response.Body.As<JObject>(preserveContent: true).SelectToken("usage.prompt_tokens");
+            }
+            catch{}
+            return token;
+            }</value>
+        </set-header>
+        <set-header name="completion-tokens" exists-action="override">
+            <value>@{
+            string token = "0";
+            try
+            {
+                token = (string)context.Response.Body.As<JObject>(preserveContent: true).SelectToken("usage.completion_tokens");
+            }
+            catch{} 
+            return token;
+            }</value>
+        </set-header>
         <!-- This will return the used backend URL in the HTTP header response. Remove it if you don't want to expose this data -->
         <set-header name="x-ms-openai" exists-action="override">
             <value>@(((JObject)((JArray)context.Variables["listBackends"])[(Int32)context.Variables["backendIndex"]]).Value<string>("name"))</value>
