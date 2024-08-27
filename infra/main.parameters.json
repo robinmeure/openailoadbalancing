@@ -2,9 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "appConfigName": {
-      "value": "apim-aca-gateway"
-    },    
     "openAIBackendPoolName": {
       "value": "openai-backend-pool"
     },
@@ -80,11 +77,14 @@
     "apimPublisherEmail": {
       "value": "noreply@microsoft.com"
     },
+    "appConfigName": {
+      "value": "aca-ai-gateway"
+    }, 
     "appInsightName": {
-      "value": "openai-apim-insight"
+      "value": "insight-ai-gateway"
     },
     "logAnalyticsName": {
-      "value": "openai-apim-loganalytics"
+      "value": "loganalytics-ai-gateway"
     },
     "vnetName": {
       "value": "vnet-ai-gateway"

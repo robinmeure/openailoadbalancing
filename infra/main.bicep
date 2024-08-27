@@ -110,7 +110,6 @@ param vnetName string
 
 
 var resourceSuffix = uniqueString(subscription().id, resourceGroup().id)
-var apimName = '${apimResourceName}-${resourceSuffix}'
 
 module network '../infra/modules/networking/network.bicep' = {
   name: 'network-deployment'
@@ -177,7 +176,7 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01
 
 //setting explicit public IP for APIM will force stV2 instance of APIM
 resource apimPublicIp 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
-  name: '${apimName}-pip'
+  name: '${apimResourceName}-pip-${resourceSuffix}'
   location: apimResourceLocation
   sku: {
     name: 'Standard'
@@ -188,8 +187,8 @@ resource apimPublicIp 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
     publicIPAllocationMethod: 'Static'
     publicIPAddressVersion: 'IPv4'
     dnsSettings: {
-      domainNameLabel: apimName
-      fqdn: '${apimName}.${apimResourceLocation}.cloudapp.azure.com'
+      domainNameLabel: '${apimResourceName}-pip-${resourceSuffix}'
+      fqdn: '${apimResourceName}.${apimResourceLocation}.cloudapp.azure.com'
     }
     
 
@@ -250,7 +249,7 @@ resource cognitiveServicesOpenAIUserAssignment 'Microsoft.Authorization/roleAssi
 
 
 resource api 'Microsoft.ApiManagement/service/apis@2023-05-01-preview' = {
-  name: openAIAPIName
+  name:openAIAPIName
   parent: apimService
   properties: {
     apiType: 'http'
@@ -377,7 +376,7 @@ resource apiMarketingSubscription 'Microsoft.ApiManagement/service/subscriptions
 }
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
-  name: logAnalyticsName
+  name: '${logAnalyticsName}-${resourceSuffix}'
   location: apimResourceLocation
   properties: any({
     retentionInDays: 30
@@ -393,7 +392,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-previ
 }
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: appInsightName
+  name: '${appInsightName}-${resourceSuffix}'
   location: apimResourceLocation
   kind: 'web'
   properties: {
@@ -472,7 +471,7 @@ resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-
 }
 
 resource appconfig 'Microsoft.AppConfiguration/configurationStores@2023-03-01' = {
-  name: appConfigName
+  name: '${appConfigName}-${resourceSuffix}'
   location: apimResourceLocation
   sku: {
     name: 'Standard'
