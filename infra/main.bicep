@@ -90,24 +90,36 @@ param logAnalyticsName string
 @description('The name of the Application Insights resource')
 param appInsightName string
 
-// @description('The name of the ApimDiagnostics Setting')
-// param apimDiagnosticsName string
+@description('The name of the App Configuration resource')
+param appConfigName string
 
-param apimSubnetPrefix string = '10.0.0.0/24'
-param openaiSubnetPrefix string = '10.0.1.0/24'
-param vnetAddressPrefix string = '10.0.0.0/16'
+@description('The prefix of the APIM subnet')
+param apimSubnetPrefix string
+
+@description('The prefix of the OpenAI subnet')
+param openaiSubnetPrefix string
+
+@description('The prefix of the ACA subnet')
+param acaSubnetPrefix string 
+
+@description('The prefix of the VNET')
+param vnetAddressPrefix string
+
+@description('The name of the VNET')
+param vnetName string
+
 
 var resourceSuffix = uniqueString(subscription().id, resourceGroup().id)
 var apimName = '${apimResourceName}-${resourceSuffix}'
-param vnetName string
 
-module network 'network.bicep' = {
+module network '../infra/modules/networking/network.bicep' = {
   name: 'network-deployment'
   params: {
     apimSku: apimSku
     location: apimResourceLocation
     apimSubnetPrefix: apimSubnetPrefix
     openaiSubnetPrefix: openaiSubnetPrefix
+    acaSubnetPrefix: acaSubnetPrefix
     vnetAddressPrefix: vnetAddressPrefix
     vnetName: vnetName
   }
@@ -133,7 +145,7 @@ resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2021-10-01' = [
   }
 ]
 
-module privateEndpoints 'private-endpoint.bicep' = [
+module privateEndpoints '../infra/modules/networking/private-endpoint.bicep' = [
   for config in openAIConfig: if (length(openAIConfig) > 0) {
     name: '${config.name}-private-endpoint-deployment'
     params: {
@@ -222,18 +234,20 @@ resource apimService 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
   }
 }
 
-var roleDefinitionID = resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
+var cognitiveServicesOpenAIUserResourceId = resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
+resource cognitiveServicesOpenAIUserAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
     scope: cognitiveServices[i]
-    name: guid(subscription().id, resourceGroup().id, config.name, roleDefinitionID)
+    name: guid(subscription().id, resourceGroup().id, config.name, cognitiveServicesOpenAIUserResourceId)
     properties: {
-      roleDefinitionId: roleDefinitionID
+      roleDefinitionId: cognitiveServicesOpenAIUserResourceId
       principalId: apimService.identity.principalId
       principalType: 'ServicePrincipal'
     }
   }
 ]
+
+
 
 resource api 'Microsoft.ApiManagement/service/apis@2023-05-01-preview' = {
   name: openAIAPIName
@@ -299,37 +313,6 @@ resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-prev
   }
 ]
 
-// resource backendMock 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = [for (mock, i) in mockWebApps: if(length(openAIConfig) == 0 && length(mockWebApps) > 0) {
-//   name: mock.name
-//   parent: apimService
-//   properties: {
-//     description: 'backend description'
-//     url: '${mock.endpoint}/openai'
-//     protocol: 'http'
-//     circuitBreaker: {
-//       rules: [
-//         {
-//           failureCondition: {
-//             count: 3
-//             errorReasons: [
-//               'Server errors'
-//             ]
-//             interval: 'PT5M'
-//             statusCodeRanges: [
-//               {
-//                 min: 429
-//                 max: 429
-//               }
-//             ]
-//           }
-//           name: 'mockBreakerRule'
-//           tripDuration: 'PT1M'
-//         }
-//       ]
-//     }    
-//   }
-// }]
-
 resource backendPoolOpenAI 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' = if (length(openAIConfig) > 1) {
   name: openAIBackendPoolName
   parent: apimService
@@ -348,23 +331,6 @@ resource backendPoolOpenAI 'Microsoft.ApiManagement/service/backends@2023-09-01-
     }
   }
 }
-
-// resource backendPoolMock 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = if(length(openAIConfig) == 0 && length(mockWebApps) > 1) {
-//   name: mockBackendPoolName
-//   parent: apimService
-//   properties: {
-//     description: mockBackendPoolDescription
-//     type: 'Pool'
-// //    protocol: 'http'  // the protocol is not needed in the Pool type
-// //    url: '${mockWebApps[0].endpoint}/openai'   // the url is not needed in the Pool type
-//     pool: {
-//       services: [for (webApp, i) in mockWebApps: {
-//           id: '/backends/${backendMock[i].name}'
-//         }
-//       ]
-//     }
-//   }
-// }
 
 resource apimSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-05-01-preview' = {
   name: openAISubscriptionName
@@ -457,6 +423,8 @@ var headers = [
   'x-ratelimit-remaining-tokens'
   'consumed-tokens'
   'remaining-tokens'
+  'prompt-tokens'
+  'completions-tokens'
 ]
 
 resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-01-preview' = {
@@ -503,8 +471,38 @@ resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-
   }
 }
 
-output apimServiceId string = apimService.id
+resource appconfig 'Microsoft.AppConfiguration/configurationStores@2023-03-01' = {
+  name: appConfigName
+  location: apimResourceLocation
+  sku: {
+    name: 'Standard'
+  }
+  properties:  {
+    publicNetworkAccess: 'Enabled'
+  }
+}
 
+resource keyvalue 'Microsoft.AppConfiguration/configurationStores/keyValues@2023-03-01' = {
+  name: 'openai-lb-config'
+  parent: appconfig
+  properties:{
+    value: openAILoadBalancingConfigValue
+  }
+}
+
+var appConfigurationDataReaderResourceId = resourceId('Microsoft.Authorization/roleDefinitions', '516239f1-63e1-4d78-a4de-a74fb236a071')
+resource appConfigurationDataAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: appconfig
+  name: guid(subscription().id, resourceGroup().id,appConfigName, appConfigurationDataReaderResourceId)
+  properties: {
+    roleDefinitionId: appConfigurationDataReaderResourceId
+    principalId: apimService.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+
+output apimServiceId string = apimService.id
 output apimResourceGatewayURL string = apimService.properties.gatewayUrl
 
 #disable-next-line outputs-should-not-contain-secrets

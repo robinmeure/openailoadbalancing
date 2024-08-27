@@ -2,6 +2,9 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "appConfigName": {
+      "value": "apim-aca-gateway"
+    },    
     "openAIBackendPoolName": {
       "value": "openai-backend-pool"
     },
@@ -94,6 +97,9 @@
     },
     "openaiSubnetPrefix": {
       "value": "10.0.1.0/24"
+    },
+    "acaSubnetPrefix": {
+      "value": "10.0.2.0/24"
     }
   }
 }

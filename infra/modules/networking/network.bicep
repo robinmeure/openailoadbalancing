@@ -2,6 +2,7 @@ param vnetName string
 param vnetAddressPrefix string
 param apimSubnetPrefix string
 param openaiSubnetPrefix string
+param acaSubnetPrefix string
 param apimSku string 
 param location string
 
@@ -86,6 +87,29 @@ module nsgOpenAI 'br/public:avm/res/network/network-security-group:0.4.0' = {
   }
 }
 
+module nsgAca 'br/public:avm/res/network/network-security-group:0.4.0' = {
+  name: 'nsg-aca-deployment'
+  params: {
+    name: 'nsg-aca'
+    location: location
+    securityRules: [
+      {
+        name: 'AllowAPIM'
+        properties: {
+          protocol: 'Tcp'
+          sourcePortRange: '*'
+          destinationPortRange: '443'
+          sourceAddressPrefix: apimSubnetPrefix
+          destinationAddressPrefix: acaSubnetPrefix
+          access: 'Allow'
+          priority: 100
+          direction: 'Inbound'
+        }
+      }   
+    ]
+  }
+}
+
 module virtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
   name: 'virtualNetworkDeployment'
   params: {
@@ -106,6 +130,11 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
         addressPrefix: openaiSubnetPrefix
         networkSecurityGroupResourceId: nsgOpenAI.outputs.resourceId
       }
+      {
+        name: 'sn-aca'
+        addressPrefix: acaSubnetPrefix
+        networkSecurityGroupResourceId: nsgAca.outputs.resourceId
+      }
     ]
   }
 }
@@ -125,3 +154,4 @@ module dns 'br/public:avm/res/network/private-dns-zone:0.5.0' = {
 
 output apimSubnetId string = virtualNetwork.outputs.subnetResourceIds[0]
 output openaiSubnetId string = virtualNetwork.outputs.subnetResourceIds[1]
+output acaSubnetId string = virtualNetwork.outputs.subnetResourceIds[2]
