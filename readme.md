@@ -14,7 +14,6 @@ This repo is based upon the example [Advanced Load Balancing lab](https://github
 - Deploys a public IP address for the load balancer.
 - Configures a load balancer with backend pools and health probes.
 - Sets up inbound and outbound rules for network traffic.
-- Creates an Application Configuration instance that holds the load balancer configuration
 - Deploys an Application Insights and Log Analytics workspace to store the usage of the load balancer
 
 ## Usage
