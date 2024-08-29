@@ -1,7 +1,6 @@
 <policies>
     <inbound>
         <base />
-        <!-- <trace source="apim-ai-gateway">@($"{((IResponse)context.Variables["configresponse"]).Body.As<JObject>()["value"] }")</trace>-->
         <azure-openai-emit-token-metric namespace="AzureOpenAI">
             <dimension name="User ID" />
             <dimension name="Client IP" value="@(context.Request.IpAddress)" />
@@ -10,33 +9,22 @@
         <azure-openai-token-limit tokens-per-minute="1000" counter-key="@(context.Request.IpAddress)" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
         <!-- Getting the main variable where we keep the list of backends -->
         <cache-lookup-value key="listBackends" variable-name="listBackends" />
-        <cache-lookup-value key="loadBalancerConfig" variable-name="loadBalancerConfig" />
         <!-- If we can't find the variable, initialize it -->
-        <choose>
-            <when condition="@(context.Variables.ContainsKey("loadBalancerConfig") == false)">
-                <send-request mode="new" response-variable-name="loadBalancerConfig" timeout="10" ignore-error="false">
-                    <set-url>@{
-                            return $"https://appconfig-openai.azconfig.io/kv/openai-lb-config?api-version=2023-10-01";
-                    }</set-url>
-                    <set-method>GET</set-method>
-                    <authentication-managed-identity resource="https://appconfig-openai.azconfig.io" />
-                </send-request>
-                <cache-store-value key="loadBalancerConfig" value="@(((IResponse)context.Variables["loadBalancerConfig"]).Body.As<JObject>()["value"].ToString())" duration="100000" />
-            </when>
-        </choose>
-        <choose>
+         <choose>
             <when condition="@(context.Variables.ContainsKey("listBackends") == false)">
                 <!-- Variable with the load balancer config stored in a named value -->
+                <set-variable name="loadBalancerConfig" value="{{openai-lb-config}}" />
                 <set-variable name="listBackends" value="@{
                     // -------------------------------------------------
                     // ------- Explanation of backend properties -------
                     // -------------------------------------------------
                     // "name":         Name of the backend
-                    // "priority":     Lower value means higher priority over other backends. 
+                    // "priority":     Lower value means higher priority over other backends.
                     //                 If you have more one or more Priority 1 backends, they will always be used instead
                     //                 of Priority 2 or higher. Higher values backends will only be used if your lower values (top priority) are all throttling.
                     // "isThrottling": Indicates if this endpoint is returning 429 (Too many requests) currently
                     // "retryAfter":   We use it to know when to mark this endpoint as healthy again after we received a 429 response
+
                     var openAIConfig = JArray.Parse((string)context.Variables["loadBalancerConfig"]);
                     JArray backends = new JArray();
                     foreach (JObject config in openAIConfig)
@@ -46,11 +34,11 @@
                             { "name", config.GetValue("name").ToString() },
                             { "priority", config.GetValue("priority").Value<int>() },
                             { "weight", config.GetValue("weight").Value<int>() },
-                            { "isThrottling", false }, 
-                            { "retryAfter", DateTime.MinValue } 
+                            { "isThrottling", false },
+                            { "retryAfter", DateTime.MinValue }
                         });
                     }
-                    return backends;   
+                    return backends;
                 }" />
                 <!-- And store the variable into cache again -->
                 <cache-store-value key="listBackends" value="@((JArray)context.Variables["listBackends"])" duration="60" />

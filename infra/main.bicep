@@ -386,7 +386,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-previ
     sku: {
       name: 'PerGB2018'
     }
-    publicNetworkAccessForIngestion: 'Disabled'
+    publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
   })
 }
@@ -398,7 +398,7 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: logAnalytics.id
-    publicNetworkAccessForIngestion: 'Disabled'
+    publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
   }
 }
@@ -469,37 +469,6 @@ resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-
     verbosity: 'information'
   }
 }
-
-resource appconfig 'Microsoft.AppConfiguration/configurationStores@2023-03-01' = {
-  name: '${appConfigName}-${resourceSuffix}'
-  location: apimResourceLocation
-  sku: {
-    name: 'Standard'
-  }
-  properties:  {
-    publicNetworkAccess: 'Enabled'
-  }
-}
-
-resource keyvalue 'Microsoft.AppConfiguration/configurationStores/keyValues@2023-03-01' = {
-  name: 'openai-lb-config'
-  parent: appconfig
-  properties:{
-    value: openAILoadBalancingConfigValue
-  }
-}
-
-var appConfigurationDataReaderResourceId = resourceId('Microsoft.Authorization/roleDefinitions', '516239f1-63e1-4d78-a4de-a74fb236a071')
-resource appConfigurationDataAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: appconfig
-  name: guid(subscription().id, resourceGroup().id,appConfigName, appConfigurationDataReaderResourceId)
-  properties: {
-    roleDefinitionId: appConfigurationDataReaderResourceId
-    principalId: apimService.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
 
 output apimServiceId string = apimService.id
 output apimResourceGatewayURL string = apimService.properties.gatewayUrl
