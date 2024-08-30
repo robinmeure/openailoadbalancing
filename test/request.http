@@ -1,0 +1,16 @@
+@host = <your api management endpoint e.g. https://apim-ai-gateway-svsuwqfapgaqy.azure-api.net>
+@key = <one of your subscription keys>
+@api-version = 2024-06-01
+
+POST {{host}}/openai/deployments/gpt/chat/completions?api-version={{api-version}}
+Content-Type: application/json
+api-key: {{key}}
+
+{
+    "messages":[
+        {
+            "role":"user",
+            "content":"Hello!"
+        }
+    ]
+}

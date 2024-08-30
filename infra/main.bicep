@@ -285,7 +285,7 @@ resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-prev
     parent: apimService
     properties: {
       description: 'backend description'
-      url: '${cognitiveServices[i].properties.endpoint}/openai'
+      url: '${cognitiveServices[i].properties.endpoint}openai'
       protocol: 'http'
       circuitBreaker: {
         rules: [
