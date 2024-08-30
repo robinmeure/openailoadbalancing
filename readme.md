@@ -21,8 +21,8 @@ This repo is based upon the example [Advanced Load Balancing lab](https://github
 To deploy the load balancing infrastructure, follow these steps:
 
 1. Install the Azure CLI and Bicep extension.
-2. Open a terminal and navigate to the project directory.
-3. Run the command `az deployment sub create --location <location> --template-file main.bicep`.
+2. Open a terminal and navigate to the infra directory.
+3. Run the command `az deployment group create -g <your resource group name> --template-file main.bicep --parameters main.parameters.json`.
 
 ## Dependencies
 
