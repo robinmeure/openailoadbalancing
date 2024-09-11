@@ -43,3 +43,9 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01
     }
   }
 ]
+
+output endpoints array = [for (name, i) in openAIConfig :{
+  endpoints : cognitiveServices[i].properties.endpoint
+}]
+
+

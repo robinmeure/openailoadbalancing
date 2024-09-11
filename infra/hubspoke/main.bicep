@@ -34,7 +34,7 @@ param openAIModelCapacity int
 param apimResourceName string = 'apim31'
 
 @description('Location for the APIM resource')
-param apimResourceLocation string = resourceGroup().location
+param apimResourceLocation string
 
 @description('The pricing tier of this API Management service')
 @allowed([
@@ -70,24 +70,9 @@ param openAIAPIPath string
 @description('The display name of the APIM API for OpenAI API')
 param openAIAPIDisplayName string
 
-@description('The description of the APIM API for OpenAI API')
-param openAIAPIDescription string
-
 @description('Full URL for the OpenAI API spec')
 param openAIAPISpecURL string
 
-@description('The name of the APIM Subscription for OpenAI API')
-param openAISubscriptionName string
-
-@description('The description of the APIM Subscription for OpenAI API')
-param openAISubscriptionDescription string
-
-@description('The name of the OpenAI backend pool')
-param openAIBackendPoolName string
-
-@description('The description of the OpenAI backend pool')
-param openAIBackendPoolDescription string
-// advance-load-balancing: added parameter
 @description('The name of the named value for the load balancing configuration')
 param openAILoadBalancingConfigName string
 
@@ -182,6 +167,10 @@ module apimPublicIp 'br/public:avm/res/network/public-ip-address:0.6.0' = {
 }
 
 module service 'br/public:avm/res/api-management/service:0.5.0' = {
+  dependsOn:[
+    apimPublicIp
+    aoai
+  ]
   name: 'apim-deployment'
   scope: hubRg
   params: {
@@ -232,12 +221,11 @@ module service 'br/public:avm/res/api-management/service:0.5.0' = {
         ]
       }
     ]
-
     //this needs to get fixed
-    // backends: [
-    //   {
+    // backends: [ 
+    //   for (config, i) in openAIConfig: {
     //     description: 'backend description'
-    //     url: '${aoai[i].endpoint}openai'
+    //     url: '${aoai.outputs.endpoints[i]}openai'
     //     protocol: 'http'
     //     circuitBreaker: {
     //       rules: [
@@ -260,23 +248,17 @@ module service 'br/public:avm/res/api-management/service:0.5.0' = {
     //         }
     //       ]
     //     }
-    //   }
-    //   {
-    //     description: openAIBackendPoolDescription
     //     type: 'Pool'
     //     pool: {
-    //       services: [
-    //         for (config, i) in openAIConfig: {
-    //           id: '/backends/${backendOpenAI[i].name}'
-    //         }
-    //       ]
+    //       services: {
+    //           id: '/backends/${config[i].name}'
+    //         }          
     //     }
     //   }
     // ]
     subscriptions: [
       { scope: '/apis', displayName: 'Finance', state: 'active', allowTracing: true }
-      {
-        scope: '/apis'
+      { scope: '/apis'
         displayName: 'Marketing'
         state: 'active'
         allowTracing: true
@@ -298,6 +280,62 @@ module service 'br/public:avm/res/api-management/service:0.5.0' = {
         isBuffered: false
         loggerType: 'applicationInsights'
         resourceId: appInsights.outputs.resourceId
+      }
+    ]
+    apiDiagnostics:[
+      {
+        name: 'applicationinsights'
+        alwaysLog: 'allErrors'
+        backend: {
+          request: {
+            body: {
+              bytes: 0
+            }
+          }
+          response: {
+            body: {
+              bytes: 0
+            }
+            headers: [
+              'x-ratelimit-remaining-requests'
+              'x-ratelimit-remaining-tokens'
+              'consumed-tokens'
+              'remaining-tokens'
+              'prompt-tokens'
+              'completions-tokens'
+            ]
+          }
+        }
+        frontend: {
+          request: {
+            body: {
+              bytes: 0
+            }
+          }
+          response: {
+            body: {
+              bytes: 0
+            }
+            headers: [
+              'x-ratelimit-remaining-requests'
+              'x-ratelimit-remaining-tokens'
+              'consumed-tokens'
+              'remaining-tokens'
+              'prompt-tokens'
+              'completions-tokens'
+            ]
+          }
+        }
+        httpCorrelationProtocol: 'Legacy'
+        logClientIp: true
+        loggerId: appInsights.outputs.resourceId
+        metrics: true
+        operationNameFormat: 'Name'
+        sampling: {
+          percentage: 100
+          samplingType: 'fixed'
+        }
+        verbosity: 'information'
       }
     ]
   }
@@ -325,64 +363,3 @@ module appInsights 'br/public:avm/res/insights/component:0.4.1'= {
     applicationType: 'web'
   }
 }
-
-//not touched this yet
-
-var headers = [
-  'x-ratelimit-remaining-requests'
-  'x-ratelimit-remaining-tokens'
-  'consumed-tokens'
-  'remaining-tokens'
-  'prompt-tokens'
-  'completions-tokens'
-]
-
-resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-01-preview' = {
-  name: 'applicationinsights'
-  parent: api
-  properties: {
-    alwaysLog: 'allErrors'
-    backend: {
-      request: {
-        body: {
-          bytes: 0
-        }
-      }
-      response: {
-        body: {
-          bytes: 0
-        }
-        headers: headers
-      }
-    }
-    frontend: {
-      request: {
-        body: {
-          bytes: 0
-        }
-      }
-      response: {
-        body: {
-          bytes: 0
-        }
-        headers: headers
-      }
-    }
-    httpCorrelationProtocol: 'Legacy'
-    logClientIp: true
-    loggerId: apimLogger.id
-    metrics: true
-    operationNameFormat: 'Name'
-    sampling: {
-      percentage: 100
-      samplingType: 'fixed'
-    }
-    verbosity: 'information'
-  }
-}
-
-output apimServiceId string = apimService.id
-output apimResourceGatewayURL string = apimService.properties.gatewayUrl
-
-#disable-next-line outputs-should-not-contain-secrets
-output apimSubscriptionKey string = apimSubscription.listSecrets().primaryKey

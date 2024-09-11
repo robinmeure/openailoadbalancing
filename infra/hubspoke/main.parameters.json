@@ -2,8 +2,29 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "openAIBackendPoolName": {
-      "value": "openai-backend-pool"
+    "subHub": {
+      "value": "04870e4d-7892-4d41-90cb-b8f28bef7dec"
+    },
+    "subSpoke": {
+      "value": "04870e4d-7892-4d41-90cb-b8f28bef7dec"
+    },
+    "hubVnetName": {
+      "value": "vnet-hub"
+    },
+    "hubSubnetName": {
+      "value": "subnet-apim"
+    },
+    "hubRgName": {
+      "value": "rg-hub1"
+    },
+    "spokeVnetName": {
+      "value": "vnet-spoke"
+    },
+    "spokeSubnetName": {
+      "value": "subnet-openai"
+    },
+    "spokeRgName": {
+      "value": "rg-spoke1"
     },
     "openAIConfig": {
       "value": [
@@ -38,15 +59,6 @@
     "openAILoadBalancingConfigName": {
       "value": "openai-lb-config"
     },
-    "openAIBackendPoolDescription": {
-      "value": "Load balancer for multiple OpenAI endpoints"
-    },
-    "openAISubscriptionName": {
-      "value": "openai-subscription"
-    },
-    "openAISubscriptionDescription": {
-      "value": "Subscription for OpenAI resources"
-    },
     "openAIAPIName": {
       "value": "openai-api"
     },
@@ -56,9 +68,6 @@
     "openAIAPIDisplayName": {
       "value": "OpenAI API"
     },
-    "openAIAPIDescription": {
-      "value": "Azure OpenAI API inferencing API"
-    },
     "apimResourceName": {
       "value": "apim-ai-gateway"
     },
@@ -66,7 +75,7 @@
       "value": "westeurope"
     },
     "apimSku": {
-      "value": "Standardv2"
+      "value": "StandardV2"
     },
     "apimSkuCount": {
       "value": 1
@@ -77,29 +86,11 @@
     "apimPublisherEmail": {
       "value": "noreply@microsoft.com"
     },
-    "appConfigName": {
-      "value": "aca-ai-gateway"
-    }, 
     "appInsightName": {
       "value": "insight-ai-gateway"
     },
     "logAnalyticsName": {
       "value": "loganalytics-ai-gateway"
-    },
-    "vnetName": {
-      "value": "vnet-ai-gateway"
-    },
-    "vnetAddressPrefix": {
-      "value": "10.0.0.0/16"
-    },
-    "apimSubnetPrefix": {
-      "value": "10.0.0.0/24"
-    },
-    "openaiSubnetPrefix": {
-      "value": "10.0.1.0/24"
-    },
-    "acaSubnetPrefix": {
-      "value": "10.0.2.0/24"
     }
   }
 }
