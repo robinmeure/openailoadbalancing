@@ -90,9 +90,6 @@ param logAnalyticsName string
 @description('The name of the Application Insights resource')
 param appInsightName string
 
-@description('The name of the App Configuration resource')
-param appConfigName string
-
 @description('The prefix of the APIM subnet')
 param apimSubnetPrefix string
 
