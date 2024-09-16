@@ -155,3 +155,4 @@ module dns 'br/public:avm/res/network/private-dns-zone:0.5.0' = {
 output apimSubnetId string = virtualNetwork.outputs.subnetResourceIds[0]
 output openaiSubnetId string = virtualNetwork.outputs.subnetResourceIds[1]
 output acaSubnetId string = virtualNetwork.outputs.subnetResourceIds[2]
+output privateDnsZoneId string = dns.outputs.resourceId

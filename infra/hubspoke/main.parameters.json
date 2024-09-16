@@ -3,10 +3,10 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "subHub": {
-      "value": "04870e4d-7892-4d41-90cb-b8f28bef7dec"
+      "value": "0865ebb3-1889-4871-8119-562cc313d111"
     },
     "subSpoke": {
-      "value": "04870e4d-7892-4d41-90cb-b8f28bef7dec"
+      "value": "0865ebb3-1889-4871-8119-562cc313d111"
     },
     "hubVnetName": {
       "value": "vnet-hub"

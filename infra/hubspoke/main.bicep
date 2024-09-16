@@ -99,6 +99,12 @@ resource hubVnet 'Microsoft.Network/virtualNetworks@2021-02-01' existing = {
   scope: hubRg
 }
 
+
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2021-05-01' existing = {
+   name: 'privatelink.openai.azure.com'
+   scope: hubRg
+ }
+
 resource apimSubnet 'Microsoft.Network/virtualNetworks/subnets@2021-02-01' existing = {
   name: hubSubnetName
   parent: hubVnet
@@ -134,13 +140,16 @@ module aoai '../modules/aoai/cognitiveservice.bicep' = {
 }
 
 module privateEndpoints '../modules/networking/private-endpoint.bicep' = [
+  
   for config in openAIConfig: if (length(openAIConfig) > 0) {
+    dependsOn: [aoai]
     scope: spokeRg
     name: '${config.name}-private-endpoint-deployment'
     params: {
       location: apimResourceLocation
       openaiName: '${config.name}-${config.location}-${uniqueString(subSpoke, spokeRg.id)}'
       openaiSubnetResourceId: aoaiSubnet.id
+      privateDnsZoneId: privateDnsZone.id
     }
   }
 ]

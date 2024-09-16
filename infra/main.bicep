@@ -148,6 +148,7 @@ module privateEndpoints '../infra/modules/networking/private-endpoint.bicep' = [
       location: apimResourceLocation
       openaiName: '${config.name}-${config.location}-${resourceSuffix}'
       openaiSubnetResourceId: network.outputs.openaiSubnetId
+      privateDnsZoneId: network.outputs.privateDnsZoneId
     }
   }
 ]
