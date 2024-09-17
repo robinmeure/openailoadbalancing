@@ -1,13 +1,13 @@
 targetScope = 'subscription'
 
-param subHub string
-param subSpoke string
+param subHub string = '04870e4d-7892-4d41-90cb-b8f28bef7dec'
+param subSpoke string = '04870e4d-7892-4d41-90cb-b8f28bef7dec'
 param hubVnetName string = 'vnet-hub'
 param hubSubnetName string = 'subnet-apim'
-param hubRgName string = 'rg-hub'
+param hubRgName string = 'rg-hubhub'
 param spokeVnetName string = 'vnet-spoke'
 param spokeSubnetName string = 'subnet-openai'
-param spokeRgName string = 'rg-spoke'
+param spokeRgName string = 'rg-spokespoke'
 
 @description('List of OpenAI resources to create. Add pairs of name and location.')
 param openAIConfig array
@@ -415,5 +415,44 @@ module appInsights 'br/public:avm/res/insights/component:0.4.1' = {
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
     applicationType: 'web'
+  }
+}
+
+module logging '../modules/apim/logging.bicep' = {
+  dependsOn: [
+    appInsights
+    api
+  ]
+  name: 'deploy-logging'
+  scope: hubRg
+  params: {
+    apimServiceName: service.outputs.name
+    applicationInsightsId: appInsights.outputs.resourceId
+    applicationInsightsKey: appInsights.outputs.instrumentationKey
+  }
+}
+
+module aiHeaders '../modules/apim/aiheaders.bicep' = {
+  dependsOn: [
+    logging
+  ]
+  name: 'deploy-ai-headers'
+  scope: hubRg
+  params: {
+    apimServiceName: service.outputs.name
+    apiName: 'openai-api'
+    apimLoggerId:logging.outputs.apimLoggerId
+  }
+}
+
+module backends '../modules/apim/backends.bicep' = {
+  name: 'deploy-azureai-backend'
+  scope: hubRg
+  params: {
+    openAIBackendPoolName: 'openai-backend-pool'
+    openAIBackendPoolDescription: 'OpenAI Backend Pool'
+    cognitiveServices: aoai.outputs.endpoints
+    apimServiceName: service.outputs.name
+    openAIConfig: openAIConfig
   }
 }

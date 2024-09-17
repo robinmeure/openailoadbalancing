@@ -1,18 +1,20 @@
 targetScope = 'subscription'
 
+
 param location string = 'westeurope'
-param subHub string = '0865ebb3-1889-4871-8119-562cc313d111'
-param subSpoke string='0865ebb3-1889-4871-8119-562cc313d111'
+param subHub string = '04870e4d-7892-4d41-90cb-b8f28bef7dec'
+param subSpoke string='04870e4d-7892-4d41-90cb-b8f28bef7dec'
 param hubVnetName string = 'vnet-hub'
 param hubVnetAddressPrefix string = '10.0.0.0/16'
 param hubSubnetName string = 'subnet-apim'
 param apimSubnetPrefix string = '10.0.1.0/24'
-param hubRgName string = 'rg-hub1'
+param hubRgName string = 'rg-hub234'
 param spokeVnetName string = 'vnet-spoke'
 param spokeVnetAddressPrefix string = '10.1.0.0/16'
 param spokeSubnetName string = 'subnet-openai'
 param openaiSubnetPrefix string = '10.1.1.0/24'
-param spokeRgName string = 'rg-spoke1'
+param spokeRgName string = 'rg-spoke234'
+
 @description('The pricing tier of this API Management service')
 @allowed([
   'Consumption'

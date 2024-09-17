@@ -42,3 +42,4 @@ resource apiPolicy 'Microsoft.ApiManagement/service/apis/policies@2021-12-01-pre
   }
 }
 
+output apiName string = api.name
