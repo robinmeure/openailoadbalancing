@@ -1,7 +1,7 @@
 targetScope = 'subscription'
 
-param subHub string 
-param subSpoke string 
+param subHub string
+param subSpoke string
 param hubVnetName string = 'vnet-hub'
 param hubSubnetName string = 'subnet-apim'
 param hubRgName string = 'rg-hub'
@@ -69,6 +69,7 @@ param openAIAPIPath string
 
 @description('The display name of the APIM API for OpenAI API')
 param openAIAPIDisplayName string
+param openAIAPIDescription string
 
 @description('Full URL for the OpenAI API spec')
 param openAIAPISpecURL string
@@ -99,11 +100,10 @@ resource hubVnet 'Microsoft.Network/virtualNetworks@2021-02-01' existing = {
   scope: hubRg
 }
 
-
 resource privateDnsZone 'Microsoft.Network/privateDnsZones@2021-05-01' existing = {
-   name: 'privatelink.openai.azure.com'
-   scope: hubRg
- }
+  name: 'privatelink.openai.azure.com'
+  scope: hubRg
+}
 
 resource apimSubnet 'Microsoft.Network/virtualNetworks/subnets@2021-02-01' existing = {
   name: hubSubnetName
@@ -140,7 +140,6 @@ module aoai '../modules/aoai/cognitiveservice.bicep' = {
 }
 
 module privateEndpoints '../modules/networking/private-endpoint.bicep' = [
-  
   for config in openAIConfig: if (length(openAIConfig) > 0) {
     dependsOn: [aoai]
     scope: spokeRg
@@ -176,7 +175,7 @@ module apimPublicIp 'br/public:avm/res/network/public-ip-address:0.6.0' = {
 }
 
 module service 'br/public:avm/res/api-management/service:0.5.0' = {
-  dependsOn:[
+  dependsOn: [
     apimPublicIp
     aoai
   ]
@@ -212,25 +211,32 @@ module service 'br/public:avm/res/api-management/service:0.5.0' = {
     managedIdentities: {
       systemAssigned: true
     }
-    apis: [
-      {
-        name: openAIAPIName
-        displayName: openAIAPIDisplayName
-        path: openAIAPIPath
-        value: openAIAPISpecURL
-        subscriptionKeyParameterNames: {
-          header: 'api-key'
-          query: 'api-key'
-        }
-        policies: [
-          {
-            format: 'rawxml'
-            value: loadTextContent('../policy.xml')
-          }
-        ]
-      }
-    ]
-    //this needs to get fixed
+    // apis: [
+    //   {
+    //     apiType: 'http'
+    //     //description: openAIAPIDescription
+    //     displayName: openAIAPIDisplayName
+    //     format: 'openapi-link'
+    //     path: openAIAPIPath
+    //     protocols: [
+    //       'https'
+    //     ]
+    //     subscriptionKeyParameterNames: {
+    //       header: 'api-key'
+    //       query: 'api-key'
+    //     }
+    //     subscriptionRequired: true
+    //     type: 'http'
+    //     value: openAIAPISpecURL
+    //     policies: [
+    //       {
+    //         format: 'rawxml'
+    //         value: loadTextContent('../policy.xml')
+    //       }
+    //     ]
+    //   }
+    // ]
+    // //this needs to get fixed
     // backends: [ 
     //   for (config, i) in openAIConfig: {
     //     description: 'backend description'
@@ -265,90 +271,129 @@ module service 'br/public:avm/res/api-management/service:0.5.0' = {
     //     }
     //   }
     // ]
-    subscriptions: [
-      { scope: '/apis', displayName: 'Finance', state: 'active', allowTracing: true }
-      { scope: '/apis'
-        displayName: 'Marketing'
-        state: 'active'
-        allowTracing: true
-      }
-    ]
-    namedValues: [
-      {
-        displayName: openAILoadBalancingConfigName
-        secret: false
-        value: openAILoadBalancingConfigValue
-      }
-    ]
-    loggers:[
-      {
-        credentials: {
-          instrumentationKey: appInsights.outputs.instrumentationKey
-        }
-        description: 'Logger to Azure Application Insights'
-        isBuffered: false
-        loggerType: 'applicationInsights'
-        resourceId: appInsights.outputs.resourceId
-      }
-    ]
-    apiDiagnostics:[
-      {
-        name: 'applicationinsights'
-        alwaysLog: 'allErrors'
-        backend: {
-          request: {
-            body: {
-              bytes: 0
-            }
-          }
-          response: {
-            body: {
-              bytes: 0
-            }
-            headers: [
-              'x-ratelimit-remaining-requests'
-              'x-ratelimit-remaining-tokens'
-              'consumed-tokens'
-              'remaining-tokens'
-              'prompt-tokens'
-              'completions-tokens'
-            ]
-          }
-        }
-        frontend: {
-          request: {
-            body: {
-              bytes: 0
-            }
-          }
-          response: {
-            body: {
-              bytes: 0
-            }
-            headers: [
-              'x-ratelimit-remaining-requests'
-              'x-ratelimit-remaining-tokens'
-              'consumed-tokens'
-              'remaining-tokens'
-              'prompt-tokens'
-              'completions-tokens'
-            ]
-          }
-        }
-        httpCorrelationProtocol: 'Legacy'
-        logClientIp: true
-        loggerId: appInsights.outputs.resourceId
-        metrics: true
-        operationNameFormat: 'Name'
-        sampling: {
-          percentage: 100
-          samplingType: 'fixed'
-        }
-        verbosity: 'information'
-      }
-    ]
+    // subscriptions: [
+    //   { scope: '/apis', displayName: 'Finance', state: 'active', allowTracing: true }
+    //   { scope: '/apis', displayName: 'Marketing', state: 'active', allowTracing: true }
+    // ]
+    // namedValues: [
+    //   {
+    //     displayName: openAILoadBalancingConfigName
+    //     secret: false
+    //     value: openAILoadBalancingConfigValue
+    //   }
+    // ]
+    // loggers: [
+    //   {
+    //     credentials: {
+    //       instrumentationKey: appInsights.outputs.instrumentationKey
+    //     }
+    //     description: 'Logger to Azure Application Insights'
+    //     isBuffered: false
+    //     loggerType: 'applicationInsights'
+    //     resourceId: appInsights.outputs.resourceId
+    //   }
+    // ]
+    // apiDiagnostics: [
+    //   {
+    //     name: 'applicationinsights'
+    //     alwaysLog: 'allErrors'
+    //     backend: {
+    //       request: {
+    //         body: {
+    //           bytes: 0
+    //         }
+    //       }
+    //       response: {
+    //         body: {
+    //           bytes: 0
+    //         }
+    //         headers: [
+    //           'x-ratelimit-remaining-requests'
+    //           'x-ratelimit-remaining-tokens'
+    //           'consumed-tokens'
+    //           'remaining-tokens'
+    //           'prompt-tokens'
+    //           'completions-tokens'
+    //         ]
+    //       }
+    //     }
+    //     frontend: {
+    //       request: {
+    //         body: {
+    //           bytes: 0
+    //         }
+    //       }
+    //       response: {
+    //         body: {
+    //           bytes: 0
+    //         }
+    //         headers: [
+    //           'x-ratelimit-remaining-requests'
+    //           'x-ratelimit-remaining-tokens'
+    //           'consumed-tokens'
+    //           'remaining-tokens'
+    //           'prompt-tokens'
+    //           'completions-tokens'
+    //         ]
+    //       }
+    //     }
+    //     httpCorrelationProtocol: 'Legacy'
+    //     logClientIp: true
+    //     loggerId: appInsights.outputs.resourceId
+    //     metrics: true
+    //     operationNameFormat: 'Name'
+    //     sampling: {
+    //       percentage: 100
+    //       samplingType: 'fixed'
+    //     }
+    //     verbosity: 'information'
+    //   }
+    // ]
   }
 }
+
+module namedValue '../modules/apim/namedvalue.bicep' = {
+  name: 'deploy-named-value-forlb'
+  scope: resourceGroup(hubRgName)
+  params: {
+    apimServiceName: service.outputs.name
+    openAILoadBalancingConfigName: openAILoadBalancingConfigName
+    openAILoadBalancingConfigValue: openAILoadBalancingConfigValue
+  }
+}
+
+module api '../modules/apim/api.bicep' = {
+  dependsOn: [
+    namedValue
+  ]
+  name: 'deploy-azureai-api'
+  scope: resourceGroup(hubRgName)
+  params:{
+    apimServiceName: service.outputs.name
+    openAIAPIDescription: openAIAPIDescription
+    openAIAPIDisplayName: openAIAPIDisplayName
+    openAIAPIName: openAIAPIName
+    openAIAPIPath: openAIAPIPath
+    openAIAPISpecURL: openAIAPISpecURL
+  }
+}
+
+
+
+// var cognitiveServicesOpenAIUserResourceId = resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
+// resource cognitiveServicesOpenAIUserAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
+//   for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
+//     scope: aoai[i]
+//     name: guid(subscription().id, resourceGroup().id, config.name, cognitiveServicesOpenAIUserResourceId)
+//     properties: {
+//       roleDefinitionId: cognitiveServicesOpenAIUserResourceId
+//       principalId: service.outputs.systemAssignedMIPrincipalId
+//       principalType: 'ServicePrincipal'
+//     }
+//   }
+// ]
+
+
 
 module workspace 'br/public:avm/res/operational-insights/workspace:0.7.0' = {
   name: 'workspaceDeployment'
@@ -361,7 +406,7 @@ module workspace 'br/public:avm/res/operational-insights/workspace:0.7.0' = {
   }
 }
 
-module appInsights 'br/public:avm/res/insights/component:0.4.1'= {
+module appInsights 'br/public:avm/res/insights/component:0.4.1' = {
   name: 'appInsightsDeployment'
   scope: hubRg
   params: {

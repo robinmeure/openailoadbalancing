@@ -62,6 +62,9 @@
     "openAIAPIName": {
       "value": "openai-api"
     },
+    "openAIAPIDescription": {
+      "value": "Azure OpenAI API inferencing API"
+    },
     "openAIAPIPath": {
       "value": "openai"
     },
