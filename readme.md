@@ -43,6 +43,6 @@ When you have an existing environment that uses a hub and spoke model we've got 
 
 You'll find all parameters in the main.param.json for hubspoke that you can edit to use with your specific values.
 
-The <strong>prereq.bicep</strong> in the hubspoke version can be used to set up an environment if you do not have one. This will deploy the resources for hubspoke that are not in the main.bicep file.
+The **prereq.bicep** in the hubspoke version can be used to set up an environment if you do not have one. This will deploy the resources for hubspoke that are not in the main.bicep file.
 
 Run the command `az deployment sub create --template-file main.bicep --parameters main.parameters.json` to deploy "hubspoke" from the hubspoke directory.
