@@ -1,13 +1,15 @@
 targetScope = 'subscription'
 
-param subHub string = '04870e4d-7892-4d41-90cb-b8f28bef7dec'
-param subSpoke string = '04870e4d-7892-4d41-90cb-b8f28bef7dec'
-param hubVnetName string = 'vnet-hub'
-param hubSubnetName string = 'subnet-apim'
-param hubRgName string = 'rg-hubhub'
-param spokeVnetName string = 'vnet-spoke'
-param spokeSubnetName string = 'subnet-openai'
-param spokeRgName string = 'rg-spokespoke'
+@description('Subscription ID of the subscription where hub network lives')
+param hubSubscriptionId string
+@description('Subscription ID of the subscription where spoke network lives')
+param spokeSubscriptionId string
+param hubVnetName string
+param hubSubnetName string
+param hubResourcegroupName string
+param spokeVnetName string
+param spokeSubnetName string
+param spokeResourcegroupName string
 
 @description('List of OpenAI resources to create. Add pairs of name and location.')
 param openAIConfig array
@@ -84,15 +86,15 @@ var openAILoadBalancingConfigValue = '[ {"name": "openai1", "priority": 1, "weig
 @description('The name of the Log Analytics resource')
 param logAnalyticsName string
 
-var apimServiceName = '${apimResourceName}-${uniqueString(subHub, hubRg.id)}'
-var workspaceName = '${logAnalyticsName}-${uniqueString(subHub, hubRg.id)}'
+var apimServiceName = '${apimResourceName}-${uniqueString(hubSubscriptionId, hubRg.id)}'
+var workspaceName = '${logAnalyticsName}-${uniqueString(spokeSubscriptionId, hubRg.id)}'
 
 @description('The name of the Application Insights resource')
 param appInsightName string
 
 resource hubRg 'Microsoft.Resources/resourceGroups@2021-04-01' existing = {
-  name: hubRgName
-  scope: subscription(subHub)
+  name: hubResourcegroupName
+  scope: subscription(hubSubscriptionId)
 }
 
 resource hubVnet 'Microsoft.Network/virtualNetworks@2021-02-01' existing = {
@@ -100,6 +102,7 @@ resource hubVnet 'Microsoft.Network/virtualNetworks@2021-02-01' existing = {
   scope: hubRg
 }
 
+#disable-next-line BCP081
 resource privateDnsZone 'Microsoft.Network/privateDnsZones@2021-05-01' existing = {
   name: 'privatelink.openai.azure.com'
   scope: hubRg
@@ -111,8 +114,8 @@ resource apimSubnet 'Microsoft.Network/virtualNetworks/subnets@2021-02-01' exist
 }
 
 resource spokeRg 'Microsoft.Resources/resourceGroups@2021-04-01' existing = {
-  name: spokeRgName
-  scope: subscription(subSpoke)
+  name: spokeResourcegroupName
+  scope: subscription(spokeSubscriptionId)
 }
 
 resource spokeVnet 'Microsoft.Network/virtualNetworks@2021-02-01' existing = {
@@ -131,7 +134,7 @@ module aoai '../modules/aoai/cognitiveservice.bicep' = {
   params: {
     openAIConfig: openAIConfig
     openAISku: openAISku
-    resourceSuffix: uniqueString(subSpoke, spokeRg.id)
+    resourceSuffix: uniqueString(spokeSubscriptionId, spokeRg.id)
     openAIDeploymentName: openAIDeploymentName
     openAIModelName: openAIModelName
     openAIModelVersion: openAIModelVersion
@@ -146,7 +149,7 @@ module privateEndpoints '../modules/networking/private-endpoint.bicep' = [
     name: '${config.name}-private-endpoint-deployment'
     params: {
       location: apimResourceLocation
-      openaiName: '${config.name}-${config.location}-${uniqueString(subSpoke, spokeRg.id)}'
+      openaiName: '${config.name}-${config.location}-${uniqueString(spokeSubscriptionId, spokeRg.id)}'
       openaiSubnetResourceId: aoaiSubnet.id
       privateDnsZoneId: privateDnsZone.id
     }
@@ -158,7 +161,7 @@ module apimPublicIp 'br/public:avm/res/network/public-ip-address:0.6.0' = {
   scope: hubRg
   params: {
     location: apimResourceLocation
-    name: '${apimResourceName}-pip-${uniqueString(subHub, hubRg.id)}'
+    name: '${apimResourceName}-pip-${uniqueString(hubSubscriptionId, hubRg.id)}'
     zones: [
       1
       2
@@ -167,7 +170,7 @@ module apimPublicIp 'br/public:avm/res/network/public-ip-address:0.6.0' = {
     publicIPAllocationMethod: 'Static'
     publicIPAddressVersion: 'IPv4'
     dnsSettings: {
-      domainNameLabel: '${apimResourceName}-pip-${uniqueString(subHub, hubRg.id)}'
+      domainNameLabel: '${apimResourceName}-pip-${uniqueString(hubSubscriptionId, hubRg.id)}'
       domainNameLabelScope: 'TenantReuse'
       fqdn: '${apimResourceName}.${apimResourceLocation}.cloudapp.azure.com'
     }
@@ -216,7 +219,7 @@ module service 'br/public:avm/res/api-management/service:0.5.0' = {
 
 module namedValue '../modules/apim/namedvalue.bicep' = {
   name: 'deploy-named-value-forlb'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(hubResourcegroupName)
   params: {
     apimServiceName: service.outputs.name
     openAILoadBalancingConfigName: openAILoadBalancingConfigName
@@ -229,8 +232,8 @@ module api '../modules/apim/api.bicep' = {
     namedValue
   ]
   name: 'deploy-azureai-api'
-  scope: resourceGroup(hubRgName)
-  params:{
+  scope: resourceGroup(hubResourcegroupName)
+  params: {
     apimServiceName: service.outputs.name
     openAIAPIDescription: openAIAPIDescription
     openAIAPIDisplayName: openAIAPIDisplayName
@@ -239,23 +242,6 @@ module api '../modules/apim/api.bicep' = {
     openAIAPISpecURL: openAIAPISpecURL
   }
 }
-
-
-
-// var cognitiveServicesOpenAIUserResourceId = resourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
-// resource cognitiveServicesOpenAIUserAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
-//   for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
-//     scope: aoai[i]
-//     name: guid(subscription().id, resourceGroup().id, config.name, cognitiveServicesOpenAIUserResourceId)
-//     properties: {
-//       roleDefinitionId: cognitiveServicesOpenAIUserResourceId
-//       principalId: service.outputs.systemAssignedMIPrincipalId
-//       principalType: 'ServicePrincipal'
-//     }
-//   }
-// ]
-
-
 
 module workspace 'br/public:avm/res/operational-insights/workspace:0.7.0' = {
   name: 'workspaceDeployment'
@@ -303,7 +289,7 @@ module aiHeaders '../modules/apim/aiheaders.bicep' = {
   params: {
     apimServiceName: service.outputs.name
     apiName: 'openai-api'
-    apimLoggerId:logging.outputs.apimLoggerId
+    apimLoggerId: logging.outputs.apimLoggerId
   }
 }
 

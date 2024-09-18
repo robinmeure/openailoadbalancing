@@ -1,19 +1,21 @@
 targetScope = 'subscription'
 
-
 param location string = 'westeurope'
-param subHub string = '04870e4d-7892-4d41-90cb-b8f28bef7dec'
-param subSpoke string='04870e4d-7892-4d41-90cb-b8f28bef7dec'
-param hubVnetName string = 'vnet-hub'
+@description('Subscription ID of the subscription where hub network lives')
+param hubSubscriptionId string
+@description('Subscription ID of the subscription where spoke network lives')
+param spokeSubscriptionId string
+param hubVnetName string
+param hubSubnetName string
+param hubResourcegroupName string
+param spokeVnetName string
+param spokeSubnetName string
+param spokeResourcegroupName string
 param hubVnetAddressPrefix string = '10.0.0.0/16'
-param hubSubnetName string = 'subnet-apim'
 param apimSubnetPrefix string = '10.0.1.0/24'
-param hubRgName string = 'rg-hub101'
-param spokeVnetName string = 'vnet-spoke'
 param spokeVnetAddressPrefix string = '10.1.0.0/16'
-param spokeSubnetName string = 'subnet-openai'
 param openaiSubnetPrefix string = '10.1.1.0/24'
-param spokeRgName string = 'rg-spoke101'
+param spokeRgName string = 'rg-spoke1'
 
 @description('The pricing tier of this API Management service')
 @allowed([
@@ -38,27 +40,26 @@ var webServerFarmDelegation = [
 
 module rgHub 'br/public:avm/res/resources/resource-group:0.4.0' = {
   name: 'hubRgDeployment'
-  scope: subscription(subHub)
+  scope: subscription(hubSubscriptionId)
   params: {
-    name: hubRgName
+    name: hubResourcegroupName
     location: location
   }
 }
 
 module rgSpoke 'br/public:avm/res/resources/resource-group:0.4.0' = {
   name: 'spokeRgDeployment'
-  scope: subscription(subSpoke)
+  scope: subscription(spokeSubscriptionId)
   params: {
     name: spokeRgName
     location: location
   }
 }
 
-
 module nsgApim 'br/public:avm/res/network/network-security-group:0.4.0' = {
   dependsOn: [rgHub]
   name: 'nsg-apim-deployment'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(hubResourcegroupName)
   params: {
     name: 'nsg-apim'
     location: location
@@ -109,7 +110,7 @@ module nsgApim 'br/public:avm/res/network/network-security-group:0.4.0' = {
 module nsgOpenAI 'br/public:avm/res/network/network-security-group:0.4.0' = {
   dependsOn: [rgSpoke]
   name: 'nsg-openai-deployment'
-  scope: resourceGroup(spokeRgName)
+  scope: resourceGroup(spokeResourcegroupName)
   params: {
     name: 'nsg-openai'
     location: location
@@ -133,7 +134,7 @@ module nsgOpenAI 'br/public:avm/res/network/network-security-group:0.4.0' = {
 
 module hubVirtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
   name: 'hubVirtualNetworkDeployment'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(hubResourcegroupName)
   params: {
     name: hubVnetName
     location: location
@@ -153,7 +154,7 @@ module hubVirtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
 
 module spokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
   name: 'spokeVirtualNetworkDeployment'
-  scope: resourceGroup(spokeRgName)
+  scope: resourceGroup(spokeResourcegroupName)
   params: {
     name: spokeVnetName
     location: location
@@ -172,7 +173,7 @@ module spokeVirtualNetwork 'br/public:avm/res/network/virtual-network:0.2.0' = {
 
 module dns 'br/public:avm/res/network/private-dns-zone:0.5.0' = {
   name: 'dns-deployment'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(hubResourcegroupName)
   params: {
     name: 'privatelink.openai.azure.com'
     virtualNetworkLinks: [
@@ -185,14 +186,12 @@ module dns 'br/public:avm/res/network/private-dns-zone:0.5.0' = {
         virtualNetworkResourceId: spokeVirtualNetwork.outputs.resourceId
       }
     ]
-
   }
 }
 
-
 module peerSpokeToHub '../modules/networking/vnetpeering.bicep' = {
   name: 'peerSpokeToHub'
-  scope: resourceGroup(spokeRgName)
+  scope: resourceGroup(spokeResourcegroupName)
   params: {
     name: 'spokeToHub'
     virtualNetworkName: spokeVnetName
@@ -202,12 +201,10 @@ module peerSpokeToHub '../modules/networking/vnetpeering.bicep' = {
 
 module peerHubToSpoke '../modules/networking/vnetpeering.bicep' = {
   name: 'peerSpokeToHub'
-  scope: resourceGroup(hubRgName)
+  scope: resourceGroup(hubResourcegroupName)
   params: {
     name: 'hubToSpoke'
     virtualNetworkName: hubVnetName
     remoteVirtualNetworkResourceId: spokeVirtualNetwork.outputs.resourceId
   }
 }
-
-

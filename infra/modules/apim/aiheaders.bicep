@@ -21,6 +21,7 @@ var headers = [
   'completions-tokens'
 ]
 
+#disable-next-line BCP081
 resource appInsightsDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-01-preview' = {
   name: 'applicationinsights'
   parent: api

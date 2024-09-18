@@ -8,6 +8,7 @@ resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' existing = {
   name: apimServiceName
 }
 
+#disable-next-line BCP081
 resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = [
   for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
     name: config.name
@@ -41,6 +42,7 @@ resource backendOpenAI 'Microsoft.ApiManagement/service/backends@2023-05-01-prev
   }
 ]
 
+#disable-next-line BCP081
 resource backendPoolOpenAI 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' = if (length(openAIConfig) > 1) {
   dependsOn: [
     for (config, i) in openAIConfig: backendOpenAI[i]
