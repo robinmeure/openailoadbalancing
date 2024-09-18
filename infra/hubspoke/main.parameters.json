@@ -1,0 +1,99 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "hubSubscriptionId": {
+      "value": "0865ebb3-1889-4871-8119-562cc313d111"
+    },
+    "spokeSubscriptionId": {
+      "value": "0865ebb3-1889-4871-8119-562cc313d111"
+    },
+    "hubVnetName": {
+      "value": "vnet-hub"
+    },
+    "hubSubnetName": {
+      "value": "subnet-apim"
+    },
+    "hubResourcegroupName": {
+      "value": "rg-hub1"
+    },
+    "spokeVnetName": {
+      "value": "vnet-spoke"
+    },
+    "spokeSubnetName": {
+      "value": "subnet-openai"
+    },
+    "spokeResourcegroupName": {
+      "value": "rg-spoke1"
+    },
+    "openAIConfig": {
+      "value": [
+        {
+          "name": "openai1",
+          "location": "swedencentral"
+        },
+        {
+          "name": "openai2",
+          "location": "eastus"
+        }
+      ]
+    },
+    "openAIDeploymentName": {
+      "value": "gpt"
+    },
+    "openAISku": {
+      "value": "S0"
+    },
+    "openAIModelCapacity": {
+      "value": 20
+    },
+    "openAIModelName": {
+      "value": "gpt-4o-mini"
+    },
+    "openAIModelVersion": {
+      "value": "2024-07-18"
+    },
+    "openAIAPISpecURL": {
+      "value": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/cognitiveservices/data-plane/AzureOpenAI/inference/stable/2024-06-01/inference.json"
+    },
+    "openAILoadBalancingConfigName": {
+      "value": "openai-lb-config"
+    },
+    "openAIAPIName": {
+      "value": "openai-api"
+    },
+    "openAIAPIDescription": {
+      "value": "Azure OpenAI API inferencing API"
+    },
+    "openAIAPIPath": {
+      "value": "openai"
+    },
+    "openAIAPIDisplayName": {
+      "value": "OpenAI API"
+    },
+    "apimResourceName": {
+      "value": "apim-ai-gateway"
+    },
+    "apimResourceLocation": {
+      "value": "westeurope"
+    },
+    "apimSku": {
+      "value": "StandardV2"
+    },
+    "apimSkuCount": {
+      "value": 1
+    },
+    "apimPublisherName": {
+      "value": "Microsoft"
+    },
+    "apimPublisherEmail": {
+      "value": "noreply@microsoft.com"
+    },
+    "appInsightName": {
+      "value": "insight-ai-gateway"
+    },
+    "logAnalyticsName": {
+      "value": "loganalytics-ai-gateway"
+    }
+  }
+}

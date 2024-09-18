@@ -90,9 +90,6 @@ param logAnalyticsName string
 @description('The name of the Application Insights resource')
 param appInsightName string
 
-@description('The name of the App Configuration resource')
-param appConfigName string
-
 @description('The prefix of the APIM subnet')
 param apimSubnetPrefix string
 
@@ -151,6 +148,7 @@ module privateEndpoints '../infra/modules/networking/private-endpoint.bicep' = [
       location: apimResourceLocation
       openaiName: '${config.name}-${config.location}-${resourceSuffix}'
       openaiSubnetResourceId: network.outputs.openaiSubnetId
+      privateDnsZoneId: network.outputs.privateDnsZoneId
     }
   }
 ]
