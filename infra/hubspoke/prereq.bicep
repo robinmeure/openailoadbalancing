@@ -8,12 +8,12 @@ param hubVnetName string = 'vnet-hub'
 param hubVnetAddressPrefix string = '10.0.0.0/16'
 param hubSubnetName string = 'subnet-apim'
 param apimSubnetPrefix string = '10.0.1.0/24'
-param hubRgName string = 'rg-hub234'
+param hubRgName string = 'rg-hub101'
 param spokeVnetName string = 'vnet-spoke'
 param spokeVnetAddressPrefix string = '10.1.0.0/16'
 param spokeSubnetName string = 'subnet-openai'
 param openaiSubnetPrefix string = '10.1.1.0/24'
-param spokeRgName string = 'rg-spoke234'
+param spokeRgName string = 'rg-spoke101'
 
 @description('The pricing tier of this API Management service')
 @allowed([

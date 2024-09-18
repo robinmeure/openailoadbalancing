@@ -15,7 +15,7 @@
       "value": "subnet-apim"
     },
     "hubRgName": {
-      "value": "rg-hub234"
+      "value": "rg-hub101"
     },
     "spokeVnetName": {
       "value": "vnet-spoke"
@@ -24,7 +24,7 @@
       "value": "subnet-openai"
     },
     "spokeRgName": {
-      "value": "rg-spoke234"
+      "value": "rg-spoke101"
     },
     "openAIConfig": {
       "value": [

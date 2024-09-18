@@ -211,144 +211,6 @@ module service 'br/public:avm/res/api-management/service:0.5.0' = {
     managedIdentities: {
       systemAssigned: true
     }
-    // apis: [
-    //   {
-    //     apiType: 'http'
-    //     //description: openAIAPIDescription
-    //     displayName: openAIAPIDisplayName
-    //     format: 'openapi-link'
-    //     path: openAIAPIPath
-    //     protocols: [
-    //       'https'
-    //     ]
-    //     subscriptionKeyParameterNames: {
-    //       header: 'api-key'
-    //       query: 'api-key'
-    //     }
-    //     subscriptionRequired: true
-    //     type: 'http'
-    //     value: openAIAPISpecURL
-    //     policies: [
-    //       {
-    //         format: 'rawxml'
-    //         value: loadTextContent('../policy.xml')
-    //       }
-    //     ]
-    //   }
-    // ]
-    // //this needs to get fixed
-    // backends: [ 
-    //   for (config, i) in openAIConfig: {
-    //     description: 'backend description'
-    //     url: '${aoai.outputs.endpoints[i]}openai'
-    //     protocol: 'http'
-    //     circuitBreaker: {
-    //       rules: [
-    //         {
-    //           failureCondition: {
-    //             count: 3
-    //             errorReasons: [
-    //               'Server errors'
-    //             ]
-    //             interval: 'PT5M'
-    //             statusCodeRanges: [
-    //               {
-    //                 min: 429
-    //                 max: 429
-    //               }
-    //             ]
-    //           }
-    //           name: 'openAIBreakerRule'
-    //           tripDuration: 'PT1M'
-    //         }
-    //       ]
-    //     }
-    //     type: 'Pool'
-    //     pool: {
-    //       services: {
-    //           id: '/backends/${config[i].name}'
-    //         }          
-    //     }
-    //   }
-    // ]
-    // subscriptions: [
-    //   { scope: '/apis', displayName: 'Finance', state: 'active', allowTracing: true }
-    //   { scope: '/apis', displayName: 'Marketing', state: 'active', allowTracing: true }
-    // ]
-    // namedValues: [
-    //   {
-    //     displayName: openAILoadBalancingConfigName
-    //     secret: false
-    //     value: openAILoadBalancingConfigValue
-    //   }
-    // ]
-    // loggers: [
-    //   {
-    //     credentials: {
-    //       instrumentationKey: appInsights.outputs.instrumentationKey
-    //     }
-    //     description: 'Logger to Azure Application Insights'
-    //     isBuffered: false
-    //     loggerType: 'applicationInsights'
-    //     resourceId: appInsights.outputs.resourceId
-    //   }
-    // ]
-    // apiDiagnostics: [
-    //   {
-    //     name: 'applicationinsights'
-    //     alwaysLog: 'allErrors'
-    //     backend: {
-    //       request: {
-    //         body: {
-    //           bytes: 0
-    //         }
-    //       }
-    //       response: {
-    //         body: {
-    //           bytes: 0
-    //         }
-    //         headers: [
-    //           'x-ratelimit-remaining-requests'
-    //           'x-ratelimit-remaining-tokens'
-    //           'consumed-tokens'
-    //           'remaining-tokens'
-    //           'prompt-tokens'
-    //           'completions-tokens'
-    //         ]
-    //       }
-    //     }
-    //     frontend: {
-    //       request: {
-    //         body: {
-    //           bytes: 0
-    //         }
-    //       }
-    //       response: {
-    //         body: {
-    //           bytes: 0
-    //         }
-    //         headers: [
-    //           'x-ratelimit-remaining-requests'
-    //           'x-ratelimit-remaining-tokens'
-    //           'consumed-tokens'
-    //           'remaining-tokens'
-    //           'prompt-tokens'
-    //           'completions-tokens'
-    //         ]
-    //       }
-    //     }
-    //     httpCorrelationProtocol: 'Legacy'
-    //     logClientIp: true
-    //     loggerId: appInsights.outputs.resourceId
-    //     metrics: true
-    //     operationNameFormat: 'Name'
-    //     sampling: {
-    //       percentage: 100
-    //       samplingType: 'fixed'
-    //     }
-    //     verbosity: 'information'
-    //   }
-    // ]
   }
 }
 
@@ -456,3 +318,25 @@ module backends '../modules/apim/backends.bicep' = {
     openAIConfig: openAIConfig
   }
 }
+
+module subscriptions '../modules/apim/subscriptions.bicep' = {
+  dependsOn: [
+    backends
+  ]
+  name: 'deploy-azureai-subscriptions'
+  scope: hubRg
+  params: {
+    apimServiceName: service.outputs.name
+  }
+}
+
+module permissions '../modules/apim/permissions.bicep' = [
+  for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
+    scope: spokeRg
+    name: '${config.name}-roleDefinitions'
+    params: {
+      apimPrincipalId: service.outputs.systemAssignedMIPrincipalId
+      cognitiveServiceName: aoai.outputs.endpoints[i].name
+    }
+  }
+]
