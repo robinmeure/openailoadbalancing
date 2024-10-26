@@ -17,6 +17,40 @@ param spokeVnetAddressPrefix string = '10.1.0.0/16'
 param openaiSubnetPrefix string = '10.1.1.0/24'
 param spokeRgName string = 'rg-spoke1'
 
+
+//not used - but helps using a single parameter file.
+#disable-next-line no-unused-params
+param openAIConfig array = []
+#disable-next-line no-unused-params
+param openAIAPISpecURL string = ''
+#disable-next-line no-unused-params
+param openAILoadBalancingConfigName string = ''
+#disable-next-line no-unused-params
+param openAILoadBalancingConfigValue array = []
+#disable-next-line no-unused-params
+param openAIAPIName string = ''
+#disable-next-line no-unused-params
+param openAIAPIDescription string = ''
+#disable-next-line no-unused-params
+param openAIAPIPath string = ''
+#disable-next-line no-unused-params
+param openAIAPIDisplayName string = ''
+#disable-next-line no-unused-params 
+param apimResourceName string = ''
+#disable-next-line no-unused-params
+param apimResourceLocation string = ''
+#disable-next-line no-unused-params
+param apimSkuCount int = 0
+#disable-next-line no-unused-params
+param apimPublisherName string = ''
+#disable-next-line no-unused-params
+param apimPublisherEmail string = ''
+#disable-next-line no-unused-params
+param appInsightName string = ''
+#disable-next-line no-unused-params
+param logAnalyticsName string = ''
+
+
 @description('The pricing tier of this API Management service')
 @allowed([
   'Consumption'

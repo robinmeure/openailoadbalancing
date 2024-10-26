@@ -14,24 +14,6 @@ param spokeResourcegroupName string
 @description('List of OpenAI resources to create. Add pairs of name and location.')
 param openAIConfig array
 
-@description('Deployment Name')
-param openAIDeploymentName string
-
-@description('Azure OpenAI Sku')
-@allowed([
-  'S0'
-])
-param openAISku string
-
-@description('Model Name')
-param openAIModelName string
-
-@description('Model Version')
-param openAIModelVersion string
-
-@description('Model Capacity')
-param openAIModelCapacity int
-
 @description('The name of the API Management resource')
 param apimResourceName string = 'apim31'
 
@@ -81,7 +63,7 @@ param openAILoadBalancingConfigName string
 
 // advance-load-balancing: added parameter
 @description('The value of the named value for the load balancing configuration')
-var openAILoadBalancingConfigValue = '[ {"name": "openai1", "priority": 1, "weight": 100}, {"name": "openai2", "priority": 2, "weight": 300}  ]'
+param openAILoadBalancingConfigValue array
 
 @description('The name of the Log Analytics resource')
 param logAnalyticsName string
@@ -133,12 +115,7 @@ module aoai '../modules/aoai/cognitiveservice.bicep' = {
   name: 'aoai'
   params: {
     openAIConfig: openAIConfig
-    openAISku: openAISku
     resourceSuffix: uniqueString(spokeSubscriptionId, spokeRg.id)
-    openAIDeploymentName: openAIDeploymentName
-    openAIModelName: openAIModelName
-    openAIModelVersion: openAIModelVersion
-    openAIModelCapacity: openAIModelCapacity
   }
 }
 
@@ -149,7 +126,7 @@ module privateEndpoints '../modules/networking/private-endpoint.bicep' = [
     name: '${config.name}-private-endpoint-deployment'
     params: {
       location: apimResourceLocation
-      openaiName: '${config.name}-${config.location}-${uniqueString(spokeSubscriptionId, spokeRg.id)}'
+      openaiName: '${config.name}-${uniqueString(spokeSubscriptionId, spokeRg.id)}'
       openaiSubnetResourceId: aoaiSubnet.id
       privateDnsZoneId: privateDnsZone.id
     }
@@ -223,7 +200,7 @@ module namedValue '../modules/apim/namedvalue.bicep' = {
   params: {
     apimServiceName: service.outputs.name
     openAILoadBalancingConfigName: openAILoadBalancingConfigName
-    openAILoadBalancingConfigValue: openAILoadBalancingConfigValue
+    openAILoadBalancingConfigValue: string(openAILoadBalancingConfigValue)
   }
 }
 

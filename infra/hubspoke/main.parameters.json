@@ -29,35 +29,44 @@
     "openAIConfig": {
       "value": [
         {
-          "name": "openai1",
-          "location": "swedencentral"
+          "name": "openai-sweden",
+          "sku": "S0",
+          "location": "swedencentral",
+          "modelName": "gpt-4o",
+          "modelVersion": "2024-08-06",
+          "modelCapacity": 10,
+          "deploymentName": "gpt"
         },
         {
-          "name": "openai2",
-          "location": "eastus"
+          "name": "openai-france",
+          "sku": "S0",
+          "location": "francecentral",
+          "modelName": "gpt-4",
+          "modelVersion": "0613",
+          "modelCapacity": 10,
+          "deploymentName": "gpt"
         }
       ]
-    },
-    "openAIDeploymentName": {
-      "value": "gpt"
-    },
-    "openAISku": {
-      "value": "S0"
-    },
-    "openAIModelCapacity": {
-      "value": 20
-    },
-    "openAIModelName": {
-      "value": "gpt-4o-mini"
-    },
-    "openAIModelVersion": {
-      "value": "2024-07-18"
     },
     "openAIAPISpecURL": {
       "value": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/cognitiveservices/data-plane/AzureOpenAI/inference/stable/2024-06-01/inference.json"
     },
     "openAILoadBalancingConfigName": {
       "value": "openai-lb-config"
+    },
+    "openAILoadBalancingConfigValue": {
+      "value": [
+        {
+          "name": "openai-sweden",
+          "priority": 1,
+          "weight": 100
+        },
+        {
+          "name": "openai-france",
+          "priority": 2,
+          "weight": 300
+        }
+      ]
     },
     "openAIAPIName": {
       "value": "openai-api"

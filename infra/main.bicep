@@ -1,24 +1,6 @@
 @description('List of OpenAI resources to create. Add pairs of name and location.')
 param openAIConfig array
 
-@description('Deployment Name')
-param openAIDeploymentName string
-
-@description('Azure OpenAI Sku')
-@allowed([
-  'S0'
-])
-param openAISku string
-
-@description('Model Name')
-param openAIModelName string
-
-@description('Model Version')
-param openAIModelVersion string
-
-@description('Model Capacity')
-param openAIModelCapacity int
-
 @description('The name of the API Management resource')
 param apimResourceName string = 'apim31'
 
@@ -82,7 +64,7 @@ param openAILoadBalancingConfigName string
 
 // advance-load-balancing: added parameter
 @description('The value of the named value for the load balancing configuration')
-var openAILoadBalancingConfigValue = '[ {"name": "openai1", "priority": 1, "weight": 100}, {"name": "openai2", "priority": 2, "weight": 300}  ]'
+param openAILoadBalancingConfigValue array
 
 @description('The name of the Log Analytics resource')
 param logAnalyticsName string
@@ -123,10 +105,10 @@ module network '../infra/modules/networking/network.bicep' = {
 
 resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2021-10-01' = [
   for config in openAIConfig: if (length(openAIConfig) > 0) {
-    name: '${config.name}-${config.location}-${resourceSuffix}'
+    name: '${config.name}-${resourceSuffix}'
     location: config.location
     sku: {
-      name: openAISku
+      name: config.sku
     }
     kind: 'OpenAI'
     properties: {
@@ -136,7 +118,7 @@ resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2021-10-01' = [
       apiProperties: {
         statisticsEnabled: false
       }
-      customSubDomainName: toLower('${config.name}-${config.location}-${resourceSuffix}')
+      customSubDomainName: toLower('${config.name}-${resourceSuffix}')
     }
   }
 ]
@@ -146,7 +128,7 @@ module privateEndpoints '../infra/modules/networking/private-endpoint.bicep' = [
     name: '${config.name}-private-endpoint-deployment'
     params: {
       location: apimResourceLocation
-      openaiName: '${config.name}-${config.location}-${resourceSuffix}'
+      openaiName: '${config.name}-${resourceSuffix}'
       openaiSubnetResourceId: network.outputs.openaiSubnetId
       privateDnsZoneId: network.outputs.privateDnsZoneId
     }
@@ -156,18 +138,18 @@ module privateEndpoints '../infra/modules/networking/private-endpoint.bicep' = [
 
 resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = [
   for (config, i) in openAIConfig: if (length(openAIConfig) > 0) {
-    name: openAIDeploymentName
+    name: config.deploymentName
     parent: cognitiveServices[i]
     properties: {
       model: {
         format: 'OpenAI'
-        name: openAIModelName
-        version: openAIModelVersion
+        name: config.modelName
+        version: config.modelVersion
       }
     }
     sku: {
       name: 'Standard'
-      capacity: openAIModelCapacity
+      capacity: config.modelCapacity
     }
   }
 ]
@@ -340,6 +322,7 @@ resource apimSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-05
   }
 }
 
+
 // advance-load-balancing: added a naned value resource
 resource namedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
   name: openAILoadBalancingConfigName
@@ -347,7 +330,7 @@ resource namedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-prev
   properties: {
     displayName: openAILoadBalancingConfigName
     secret: false
-    value: openAILoadBalancingConfigValue
+    value: string(openAILoadBalancingConfigValue)
   }
 }
 
