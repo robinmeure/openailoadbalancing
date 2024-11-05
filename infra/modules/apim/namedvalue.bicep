@@ -2,6 +2,7 @@ param apimServiceName string
 param openAILoadBalancingConfigName string
 param openAILoadBalancingConfigValue string
 
+
 resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' existing = {
   name: apimServiceName
 }

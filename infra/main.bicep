@@ -66,6 +66,12 @@ param openAILoadBalancingConfigName string
 @description('The value of the named value for the load balancing configuration')
 param openAILoadBalancingConfigValue array
 
+@description('The name of the named value for the fair use configuration')
+param openAIFairUseConfigName string
+
+@description('The value of the named value for the fair use configuration')
+param openAIFairUseConfigValue array
+
 @description('The name of the Log Analytics resource')
 param logAnalyticsName string
 
@@ -324,13 +330,23 @@ resource apimSubscription 'Microsoft.ApiManagement/service/subscriptions@2023-05
 
 
 // advance-load-balancing: added a naned value resource
-resource namedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
+resource openAILoadBalancingConfigNameNamedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
   name: openAILoadBalancingConfigName
   parent: apimService
   properties: {
     displayName: openAILoadBalancingConfigName
     secret: false
     value: string(openAILoadBalancingConfigValue)
+  }
+}
+
+resource openAIFairUseConfigNameNamedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
+  name: openAIFairUseConfigName
+  parent: apimService
+  properties: {
+    displayName: openAIFairUseConfigName
+    secret: false
+    value: string(openAIFairUseConfigValue)
   }
 }
 

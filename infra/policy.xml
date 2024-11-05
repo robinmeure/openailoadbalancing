@@ -1,16 +1,59 @@
 <policies>
     <inbound>
         <base />
-        <azure-openai-emit-token-metric namespace="AzureOpenAI">
-            <dimension name="User ID" />
-            <dimension name="Client IP" value="@(context.Request.IpAddress)" />
-            <dimension name="API ID" />
-        </azure-openai-emit-token-metric>
-        <azure-openai-token-limit tokens-per-minute="1000" counter-key="@(context.Request.IpAddress)" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
+        <!-- Determine the current clientId based on the passed on the httpHeader -->
+        <set-variable name="clientId" value="@(context.Request.Headers.GetValueOrDefault("x-client-id",""))" />
+
+        <!-- Retrieve all the different clientTypes to use to evualate the current clientId and their bucket -->
+        <cache-lookup-value key="clientTypes" variable-name="clientTypes" />
+        <choose>
+            <when condition="@(context.Variables.ContainsKey("clientTypes") == false)">
+                <set-variable name="clientTypesConfig" value="{{openai-fairUse}}" />
+                <set-variable name="clientTypes" value="@{
+                var fairUseConfig = JArray.Parse((string)context.Variables["clientTypesConfig"]);
+                JArray types = new JArray();
+                foreach (JObject config in fairUseConfig)
+                {
+                    types.Add(new JObject()
+                    {
+                        { "clientId", config.GetValue("clientId").ToString() },
+                        { "name", config.GetValue("name").ToString() },
+                    });
+                }
+                return types;
+                }" />
+                <!-- And store the variable into cache again for a long time -->
+                <cache-store-value key="clientTypes" value="@((JArray)context.Variables["clientTypes"])" duration="600" />
+            </when>
+        </choose>
+        <set-variable name="clientType" value="@{
+            var clientId = context.Variables["clientId"];
+            var clientTypes = (JArray) context.Variables["clientTypes"];
+            foreach(JObject type in clientTypes)
+            {
+                if (type.GetValue("clientId").ToString() == clientId)
+                {
+                    return (type.GetValue("name"));
+                }
+           }
+            return "small"; //if no match is found, we default back to the 'small' bucket
+        }" />
+        <!-- Based on the match between clientType and clientId, we give the caller a certain amount of tokens to be used -->
+        <choose>
+            <when condition="@((context.Variables.GetValueOrDefault<string>("clientType"))== "small")">
+                <azure-openai-token-limit tokens-per-minute="10000" counter-key="clientId" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
+            </when>
+            <when condition="@((context.Variables.GetValueOrDefault<string>("clientType"))== "medium")">
+                <azure-openai-token-limit tokens-per-minute="100000" counter-key="clientId" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
+            </when>
+            <when condition="@((context.Variables.GetValueOrDefault<string>("clientType"))== "large")">
+                <azure-openai-token-limit tokens-per-minute="1000000" counter-key="clientId" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
+            </when>
+        </choose>
         <!-- Getting the main variable where we keep the list of backends -->
         <cache-lookup-value key="listBackends" variable-name="listBackends" />
         <!-- If we can't find the variable, initialize it -->
-         <choose>
+        <choose>
             <when condition="@(context.Variables.ContainsKey("listBackends") == false)">
                 <!-- Variable with the load balancer config stored in a named value -->
                 <set-variable name="loadBalancerConfig" value="{{openai-lb-config}}" />
@@ -191,6 +234,9 @@
         <!-- This will return the used backend URL in the HTTP header response. Remove it if you don't want to expose this data -->
         <set-header name="x-ms-openai" exists-action="override">
             <value>@(((JObject)((JArray)context.Variables["listBackends"])[(Int32)context.Variables["backendIndex"]]).Value<string>("name"))</value>
+        </set-header>
+        <set-header name="clientId" exists-action="override">
+            <value>@((string) context.Variables["clientId"])</value>
         </set-header>
     </outbound>
     <on-error>

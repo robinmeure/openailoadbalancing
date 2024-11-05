@@ -47,6 +47,25 @@
         }
       ]
     },
+    "openAIFairUseConfigName": {
+      "value": "openai-fairuse-config"
+    },
+    "openAIFairUseConfigValue": {
+      "value": [
+        {
+          "name": "small",
+          "clientId": "1234"        
+        },
+        {
+          "name": "medium",
+          "clientId": "4567"
+        },
+        {
+          "name": "large",
+          "clientId": "7890"
+         }
+      ]
+    },
     "openAIBackendPoolDescription": {
       "value": "Load balancer for multiple OpenAI endpoints"
     },
