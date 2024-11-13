@@ -433,6 +433,7 @@ resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-
         body: {
           bytes: 0
         }
+        headers:['x-client-id']
       }
       response: {
         body: {

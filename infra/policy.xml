@@ -8,7 +8,7 @@
         <cache-lookup-value key="clientTypes" variable-name="clientTypes" />
         <choose>
             <when condition="@(context.Variables.ContainsKey("clientTypes") == false)">
-                <set-variable name="clientTypesConfig" value="{{openai-fairUse}}" />
+                <set-variable name="clientTypesConfig" value="{{openai-fairuse-config}}" />
                 <set-variable name="clientTypes" value="@{
                 var fairUseConfig = JArray.Parse((string)context.Variables["clientTypesConfig"]);
                 JArray types = new JArray();

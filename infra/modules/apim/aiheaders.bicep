@@ -45,6 +45,7 @@ resource appInsightsDiagnostics 'Microsoft.ApiManagement/service/apis/diagnostic
         body: {
           bytes: 0
         }
+        headers:['x-client-id']
       }
       response: {
         body: {

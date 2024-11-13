@@ -105,9 +105,6 @@
     "apimPublisherEmail": {
       "value": "noreply@microsoft.com"
     },
-    "appConfigName": {
-      "value": "aca-ai-gateway"
-    },
     "appInsightName": {
       "value": "insight-ai-gateway"
     },

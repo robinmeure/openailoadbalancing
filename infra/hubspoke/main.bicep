@@ -65,6 +65,12 @@ param openAILoadBalancingConfigName string
 @description('The value of the named value for the load balancing configuration')
 param openAILoadBalancingConfigValue array
 
+@description('The name of the named value for the fair use configuration')
+param openAIFairUseConfigName string
+
+@description('The value of the named value for the fair use configuration')
+param openAIFairUseConfigValue array
+
 @description('The name of the Log Analytics resource')
 param logAnalyticsName string
 
@@ -201,6 +207,8 @@ module namedValue '../modules/apim/namedvalue.bicep' = {
     apimServiceName: service.outputs.name
     openAILoadBalancingConfigName: openAILoadBalancingConfigName
     openAILoadBalancingConfigValue: string(openAILoadBalancingConfigValue)
+    openAIFairUseConfigName: openAIFairUseConfigName
+    openAIFairUseConfigValue: string(openAIFairUseConfigValue)
   }
 }
 

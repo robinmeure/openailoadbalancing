@@ -1,6 +1,8 @@
 param apimServiceName string
 param openAILoadBalancingConfigName string
 param openAILoadBalancingConfigValue string
+param openAIFairUseConfigName string
+param openAIFairUseConfigValue string
 
 
 resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' existing = {
@@ -9,7 +11,7 @@ resource apim 'Microsoft.ApiManagement/service@2023-05-01-preview' existing = {
 
 
 // advance-load-balancing: added a naned value resource
-resource namedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
+resource openAILoadBalancingNamedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
   name: openAILoadBalancingConfigName
   parent: apim
   properties: {
@@ -18,3 +20,15 @@ resource namedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-prev
     value: openAILoadBalancingConfigValue
   }
 }
+
+// advance-load-balancing: added a naned value resource
+resource openAIFairUseConfigNamedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
+  name: openAILoadBalancingConfigName
+  parent: apim
+  properties: {
+    displayName: openAIFairUseConfigName
+    secret: false
+    value: openAIFairUseConfigValue
+  }
+}
+
