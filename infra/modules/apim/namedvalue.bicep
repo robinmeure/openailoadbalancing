@@ -23,7 +23,7 @@ resource openAILoadBalancingNamedValue 'Microsoft.ApiManagement/service/namedVal
 
 // advance-load-balancing: added a naned value resource
 resource openAIFairUseConfigNamedValue 'Microsoft.ApiManagement/service/namedValues@2023-05-01-preview' = {
-  name: openAILoadBalancingConfigName
+  name: openAIFairUseConfigName
   parent: apim
   properties: {
     displayName: openAIFairUseConfigName
