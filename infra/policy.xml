@@ -27,29 +27,30 @@
             </when>
         </choose>
         <set-variable name="clientType" value="@{
-            var clientId = context.Variables["clientId"];
+           var clientId = (string) context.Variables["clientId"];
             var clientTypes = (JArray) context.Variables["clientTypes"];
             foreach(JObject type in clientTypes)
             {
                 if (type.GetValue("clientId").ToString() == clientId)
                 {
-                    return (type.GetValue("name"));
+                    return (type.GetValue("name").ToString());
                 }
            }
-            return "small"; //if no match is found, we default back to the 'small' bucket
+           return "small"; //if no match is found, we default back to the 'small' bucket
         }" />
         <!-- Based on the match between clientType and clientId, we give the caller a certain amount of tokens to be used -->
         <choose>
-            <when condition="@((context.Variables.GetValueOrDefault<string>("clientType"))== "small")">
+            <when condition="@((string) context.Variables["clientType"] == "small")">
                 <azure-openai-token-limit tokens-per-minute="10000" counter-key="clientId" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
             </when>
-            <when condition="@((context.Variables.GetValueOrDefault<string>("clientType"))== "medium")">
+            <when condition="@((string) context.Variables["clientType"] == "medium")">
                 <azure-openai-token-limit tokens-per-minute="100000" counter-key="clientId" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
             </when>
-            <when condition="@((context.Variables.GetValueOrDefault<string>("clientType"))== "large")">
+            <when condition="@((string) context.Variables["clientType"] == "large")">
                 <azure-openai-token-limit tokens-per-minute="1000000" counter-key="clientId" estimate-prompt-tokens="true" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" />
             </when>
         </choose>
+
         <!-- Getting the main variable where we keep the list of backends -->
         <cache-lookup-value key="listBackends" variable-name="listBackends" />
         <!-- If we can't find the variable, initialize it -->
