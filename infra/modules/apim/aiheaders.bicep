@@ -18,7 +18,7 @@ var headers = [
   'consumed-tokens'
   'remaining-tokens'
   'prompt-tokens'
-  'completions-tokens'
+  'completion-tokens'
 ]
 
 #disable-next-line BCP081

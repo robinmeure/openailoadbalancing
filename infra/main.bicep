@@ -420,7 +420,7 @@ var headers = [
   'consumed-tokens'
   'remaining-tokens'
   'prompt-tokens'
-  'completions-tokens'
+  'completion-tokens'
 ]
 
 resource symbolicname 'Microsoft.ApiManagement/service/apis/diagnostics@2023-09-01-preview' = {
